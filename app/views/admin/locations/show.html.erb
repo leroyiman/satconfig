@@ -1,16 +1,14 @@
 <% content_for :breadcrumb do %>
-  <li class="breadcrumb-item"><%= link_to "Dashboard", admin_root_path %></li>
   <li class="breadcrumb-item"><%= link_to "Locations", admin_locations_path %></li>
-  <li class="breadcrumb-item active"><%= @location.name %></li>
+  <li class="breadcrumb-item active"><%= @location.effective_name %></li>
 <% end %>
 
 <div class="d-flex align-items-start justify-content-between mb-4">
   <div>
-    <h4 class="fw-bold mb-1"><%= @location.name %></h4>
+    <h4 class="fw-bold mb-1"><%= @location.effective_name %></h4>
     <p class="text-muted small mb-0">
       <i class="fa-solid fa-city me-1"></i><%= @location.city.name %> &nbsp;·&nbsp;
-      <i class="fa-solid fa-language me-1"></i><%= @location.language&.upcase || "—" %> &nbsp;·&nbsp;
-      <i class="fa-solid fa-envelope me-1"></i><%= @location.email || "—" %>
+      Zoho ID: <code><%= @location.zoho_location_id || "—" %></code>
     </p>
   </div>
   <%= link_to admin_locations_path, class: "btn btn-outline-secondary btn-sm" do %>
@@ -18,37 +16,122 @@
   <% end %>
 </div>
 
-<% Product::TYPES.each do |type| %>
-  <% products = @products_by_type[type] || [] %>
-  <% next if products.empty? %>
-
-  <div class="admin-card mb-3">
-    <div class="card-header d-flex align-items-center gap-2">
-      <i class="fa-solid <%= product_type_icon(type) %> text-<%= product_type_color(type) %>"></i>
-      <span class="fw-semibold"><%= product_type_label(type) %></span>
-      <span class="badge bg-secondary ms-auto"><%= products.count %></span>
-    </div>
-    <div class="table-responsive">
-      <table class="table table-sm mb-0 small">
-        <tbody>
-          <% products.each do |product| %>
-            <tr>
-              <td class="ps-3">
-                <%= link_to product.effective_attr("name") || "–",
-                            admin_product_path(product),
-                            class: "text-decoration-none fw-medium text-dark" %>
-                <% if product.local_attributes.present? %>
-                  <span class="badge bg-warning text-dark ms-1" style="font-size:0.6rem">Override</span>
-                <% end %>
-              </td>
-              <td class="text-muted pe-3 text-end">
-                <%= link_to "Bearbeiten →", admin_product_path(product),
-                            class: "small text-muted text-decoration-none" %>
-              </td>
-            </tr>
+<div class="row g-4">
+  <%# ── Override-Formular ───────────────────────────────────────────────── %>
+  <div class="col-lg-7">
+    <div class="admin-card">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+          <i class="fa-solid fa-pen-to-square text-muted"></i>
+          Overrides
+        </div>
+        <% if @location.local_attributes.present? %>
+          <%= button_to reset_override_admin_location_path(@location),
+                        method: :patch, class: "btn btn-sm btn-outline-danger",
+                        form: { "data-turbo-confirm": "Alle Overrides zurücksetzen?" } do %>
+            <i class="fa-solid fa-rotate-left me-1"></i>Alle zurücksetzen
           <% end %>
-        </tbody>
-      </table>
+        <% end %>
+      </div>
+
+      <div class="mx-3 mt-3 mb-2 p-2 rounded small"
+           style="background:#f0f4ff; border:1px solid #d0dbff; color:#3a4a8a;">
+        <i class="fa-solid fa-circle-info me-1"></i>
+        Leer lassen = CRM-Wert gilt. Nur ausgefüllte Felder überschreiben den Zoho-Wert.
+      </div>
+
+      <%= form_with url: admin_location_path(@location), method: :patch, local: true do |f| %>
+        <div class="p-3">
+          <% [
+               { key: "name",        label: "Name",         type: :text,     crm: @location.name },
+               { key: "address",     label: "Adresse",      type: :text,     crm: @location.address },
+               { key: "description", label: "Beschreibung", type: :textarea, crm: nil,
+                 hint: "Marketing-Text für den Konfigurator (kein CRM-Feld)" },
+               { key: "picture_id",  label: "Bild-ID",      type: :text,     crm: @location.picture_id,
+                 hint: "Zoho Bild-Referenz überschreiben" },
+               { key: "phone",       label: "Telefon",      type: :text,     crm: @location.phone },
+               { key: "email",       label: "E-Mail",       type: :email,    crm: @location.email },
+               { key: "website",     label: "Website",      type: :url,      crm: @location.website }
+             ].each do |field| %>
+            <div class="mb-3 border-bottom pb-3">
+              <div class="d-flex align-items-center justify-content-between mb-1">
+                <span class="small fw-semibold"><%= field[:label] %></span>
+                <% if @location.overridden?(field[:key]) %>
+                  <span class="badge bg-warning text-dark" style="font-size:0.6rem">Override aktiv</span>
+                <% else %>
+                  <span class="badge bg-light text-muted" style="font-size:0.6rem">CRM</span>
+                <% end %>
+              </div>
+
+              <% if field[:crm].present? %>
+                <div class="small crm-value mb-1">
+                  <span class="badge bg-light text-muted me-1" style="font-size:0.6rem">CRM</span>
+                  <%= field[:crm].truncate(80) %>
+                </div>
+              <% end %>
+
+              <div class="input-group input-group-sm">
+                <% if field[:type] == :textarea %>
+                  <%= f.text_area "location[local_attributes][#{field[:key]}]",
+                                  value: @location.local_attributes[field[:key]],
+                                  placeholder: "Eigene Beschreibung eingeben…",
+                                  rows: 3,
+                                  class: "form-control #{'border-warning' if @location.overridden?(field[:key])}" %>
+                <% else %>
+                  <%= f.text_field "location[local_attributes][#{field[:key]}]",
+                                   value: @location.local_attributes[field[:key]],
+                                   placeholder: field[:crm] || "Override eingeben…",
+                                   class: "form-control #{'border-warning' if @location.overridden?(field[:key])}" %>
+                <% end %>
+                <% if @location.overridden?(field[:key]) %>
+                  <%= button_to reset_override_admin_location_path(@location, field: field[:key]),
+                                method: :patch, class: "btn btn-sm btn-outline-secondary" do %>
+                    <i class="fa-solid fa-rotate-left"></i>
+                  <% end %>
+                <% end %>
+              </div>
+              <% if field[:hint] %>
+                <div class="form-text"><%= field[:hint] %></div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+
+        <div class="px-3 pb-3 border-top pt-2">
+          <%= f.submit "Speichern", class: "btn btn-primary btn-sm px-4" %>
+        </div>
+      <% end %>
     </div>
   </div>
-<% end %>
+
+  <%# ── Produkte ─────────────────────────────────────────────────────────── %>
+  <div class="col-lg-5">
+    <div class="admin-card">
+      <div class="card-header">
+        <i class="fa-solid fa-layer-group text-muted me-1"></i>Produkte
+      </div>
+      <% Product::TYPES.each do |type| %>
+        <% products = @products_by_type[type] || [] %>
+        <% next if products.empty? %>
+        <div class="px-3 pt-2 pb-1 border-bottom">
+          <p class="small text-muted fw-semibold mb-1">
+            <span class="badge bg-<%= product_type_color(type) %>"><%= product_type_label(type) %></span>
+          </p>
+          <% products.each do |product| %>
+            <div class="d-flex align-items-center justify-content-between py-1">
+              <span class="small">
+                <%= product.effective_attr("name") || "–" %>
+                <% if product.local_attributes.present? %>
+                  <span class="badge bg-warning text-dark ms-1" style="font-size:0.55rem">Override</span>
+                <% end %>
+              </span>
+              <%= link_to admin_product_path(product), class: "small text-muted text-decoration-none" do %>
+                →
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

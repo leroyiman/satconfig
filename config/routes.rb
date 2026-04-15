@@ -28,20 +28,32 @@ Rails.application.routes.draw do
   namespace :admin do
     root to: "dashboard#index"
 
-    resources :locations, only: [:index, :show]
+    resources :cities, only: [:index, :show, :update] do
+      member do
+        patch :reset_override
+      end
+    end
+
+    resources :locations, only: [:index, :show, :update] do
+      member do
+        patch :reset_override
+      end
+    end
 
     resources :products, only: [:index, :show, :update] do
       member do
-        patch :reset_override        # ?field=price_3 → einzelnes Feld zurücksetzen
-                                     # kein ?field   → alle Overrides zurücksetzen
+        patch :reset_override
       end
     end
 
     resources :product_translations, only: [:update] do
       member do
-        patch :reset_override        # ?field=name|description|all
+        patch :reset_override
       end
     end
+
+    # Konfigurator-Zuweisungen: welche Locations/Produkte in welchem Konfigurator
+    resources :configurator_assignments, only: [:index, :create, :destroy]
   end
 
   # ── Health Check ──────────────────────────────────────────────────────────

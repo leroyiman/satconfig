@@ -1,0 +1,36 @@
+<% content_for :breadcrumb do %>
+  <li class="breadcrumb-item active">Städte</li>
+<% end %>
+
+<h4 class="fw-bold mb-4"><i class="fa-solid fa-city text-muted me-2"></i>Städte</h4>
+
+<div class="admin-card">
+  <table class="table table-hover align-middle mb-0">
+    <thead class="table-light">
+      <tr>
+        <th class="ps-3">Stadt</th>
+        <th>Währung</th>
+        <th>Locations</th>
+        <th>Override</th>
+        <th class="pe-3">Aktion</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @cities.each do |city| %>
+        <tr>
+          <td class="ps-3 fw-medium"><%= city.effective_name %></td>
+          <td><%= city.effective_currency %></td>
+          <td class="text-muted small"><%= city.locations.active.count %></td>
+          <td>
+            <% if city.local_attributes.present? %>
+              <span class="badge bg-warning text-dark" style="font-size:0.65rem;">Override aktiv</span>
+            <% end %>
+          </td>
+          <td class="pe-3">
+            <%= link_to "Bearbeiten", admin_city_path(city), class: "btn btn-sm btn-outline-secondary" %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

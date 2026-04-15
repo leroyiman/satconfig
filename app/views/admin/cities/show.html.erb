@@ -1,0 +1,83 @@
+<% content_for :breadcrumb do %>
+  <li class="breadcrumb-item"><%= link_to "Städte", admin_cities_path %></li>
+  <li class="breadcrumb-item active"><%= @city.effective_name %></li>
+<% end %>
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h4 class="fw-bold mb-0"><%= @city.effective_name %></h4>
+    <p class="text-muted small mb-0">
+      Zoho ID: <code><%= @city.zoho_city_id || "—" %></code>
+    </p>
+  </div>
+  <%= link_to admin_cities_path, class: "btn btn-outline-secondary btn-sm" do %>
+    <i class="fa-solid fa-arrow-left me-1"></i>Zurück
+  <% end %>
+</div>
+
+<div class="admin-card">
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <div class="d-flex align-items-center gap-2">
+      <i class="fa-solid fa-pen-to-square text-muted"></i>
+      Overrides
+    </div>
+    <% if @city.local_attributes.present? %>
+      <%= button_to reset_override_admin_city_path(@city),
+                    method: :patch, class: "btn btn-sm btn-outline-danger",
+                    form: { "data-turbo-confirm": "Alle Overrides zurücksetzen?" } do %>
+        <i class="fa-solid fa-rotate-left me-1"></i>Alle zurücksetzen
+      <% end %>
+    <% end %>
+  </div>
+
+  <div class="mx-3 mt-3 mb-2 p-2 rounded small"
+       style="background:#f0f4ff; border:1px solid #d0dbff; color:#3a4a8a;">
+    <i class="fa-solid fa-circle-info me-1"></i>
+    Leer lassen = CRM-Wert gilt. Nur ausgefüllte Felder überschreiben den Zoho-Wert.
+  </div>
+
+  <%= form_with url: admin_city_path(@city), method: :patch, local: true do |f| %>
+    <div class="p-3">
+      <% [
+           { key: "name",     label: "Name",     type: :text,   crm: @city.name },
+           { key: "currency", label: "Währung",  type: :text,   crm: @city.currency,
+             hint: "z.B. EUR, CHF, USD" }
+         ].each do |field| %>
+        <div class="row gx-3 align-items-center mb-3">
+          <div class="col-3 small fw-medium text-muted"><%= field[:label] %></div>
+          <div class="col-3 small crm-value">
+            <span class="badge bg-light text-muted me-1" style="font-size:0.6rem">CRM</span>
+            <%= field[:crm] %>
+          </div>
+          <div class="col-4">
+            <div class="input-group input-group-sm">
+              <%= f.text_field "city[local_attributes][#{field[:key]}]",
+                               value: @city.local_attributes[field[:key]],
+                               placeholder: field[:crm],
+                               class: "form-control #{'border-warning' if @city.overridden?(field[:key])}" %>
+              <% if @city.overridden?(field[:key]) %>
+                <%= button_to reset_override_admin_city_path(@city, field: field[:key]),
+                              method: :patch, class: "btn btn-sm btn-outline-secondary" do %>
+                  <i class="fa-solid fa-rotate-left"></i>
+                <% end %>
+              <% end %>
+            </div>
+            <% if field[:hint] %>
+              <div class="form-text"><%= field[:hint] %></div>
+            <% end %>
+          </div>
+          <div class="col-2">
+            <% if @city.overridden?(field[:key]) %>
+              <span class="badge bg-warning text-dark" style="font-size:0.65rem">Override</span>
+            <% else %>
+              <span class="badge bg-light text-muted" style="font-size:0.65rem">CRM</span>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+    <div class="px-3 pb-3 border-top pt-2">
+      <%= f.submit "Speichern", class: "btn btn-primary btn-sm px-4" %>
+    </div>
+  <% end %>
+</div>

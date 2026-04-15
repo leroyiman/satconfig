@@ -44,9 +44,21 @@
 
   <p class="nav-section mt-3">Struktur</p>
 
+  <%= link_to admin_cities_path,
+              class: "nav-link #{controller_name == 'cities' ? 'active' : ''}" do %>
+    <i class="fa-solid fa-city fa-fw"></i> Städte
+  <% end %>
+
   <%= link_to admin_locations_path,
               class: "nav-link #{controller_name == 'locations' ? 'active' : ''}" do %>
-    <i class="fa-solid fa-map-pin fa-fw"></i> Locations & Städte
+    <i class="fa-solid fa-map-pin fa-fw"></i> Locations
+  <% end %>
+
+  <p class="nav-section mt-3">Konfigurator</p>
+
+  <%= link_to admin_configurator_assignments_path(configurator_type: "geschaeftsadresse"),
+              class: "nav-link #{controller_name == 'configurator_assignments' ? 'active' : ''}" do %>
+    <i class="fa-solid fa-sliders fa-fw"></i> Zuweisungen
   <% end %>
 
   <p class="nav-section mt-3">Overrides</p>

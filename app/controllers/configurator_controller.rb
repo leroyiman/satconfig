@@ -52,43 +52,72 @@ class ConfiguratorController < PublicController
   end
 
   def load_step_data
-    @step = params[:step].to_i
+    @step            = params[:step].to_i
+    @conf_type       = "geschaeftsadresse"
+    @has_assignments = ConfiguratorAssignment.for_configurator(@conf_type).exists?
 
     case @step
     when 1
-      @locations = Location.active.includes(:city).order("cities.name, locations.name")
+      @locations = assigned_locations
     when 2
       return redirect_to configurator_step_path(@config.share_token, 1) unless @config.location
-      @virtual_offices      = @config.location.products.where(type: "VirtualOffice").active
-      @company_headquarters = @config.location.products.where(type: "CompanyHeadquarter").active
+      products = assigned_products_for_step(2)
+      @virtual_offices      = products.select { |p| p.type == "VirtualOffice" }
+      @company_headquarters = products.select { |p| p.type == "CompanyHeadquarter" }
     when 3
       return redirect_to configurator_step_path(@config.share_token, 2) unless @config.product
-      @phone_addons   = addons_for_categories(%w[Telefonservice])
-      @post_addons    = addons_for_categories(%w[Post])
-      @extra_addons   = addons_for_categories(%w[Erreichbarkeit])
+      step3_products = assigned_products_for_step(3)
+      @phone_addons  = step3_products.select { |a| a.crm_attributes["category"] == "Telefonservice" }
+      @post_addons   = step3_products.select { |a| a.crm_attributes["category"] == "Post" }
+      @extra_addons  = step3_products.select { |a| a.crm_attributes["category"] == "Erreichbarkeit" }
+      # Fallback wenn keine Assignments: Kategorie-basierte Abfrage
+      if step3_products.empty? && !@has_assignments
+        @phone_addons  = addons_for_categories(%w[Telefonservice])
+        @post_addons   = addons_for_categories(%w[Post])
+        @extra_addons  = addons_for_categories(%w[Erreichbarkeit])
+      end
       @selected_addon_ids = @config.addons_for_step(3).map(&:id)
     when 4
-      @meeting_packages = addons_for_categories(%w[Meetings])
+      @meeting_packages = assigned_products_for_step(4).presence ||
+                          (@has_assignments ? [] : addons_for_categories(%w[Meetings]))
       @selected_addon_ids = @config.addons_for_step(4).map(&:id)
     when 5
-      @membership_options = addons_for_categories(%w[Membership])
+      @membership_options = assigned_products_for_step(5).presence ||
+                            (@has_assignments ? [] : addons_for_categories(%w[Membership]))
       @selected_addon_ids = @config.addons_for_step(5).map(&:id)
     when 6
-      # Upgrade-Angebote: Addons die noch nicht gewählt wurden
       already_chosen = @config.addon_ids
-      @upgrade_addons = addons_for_categories(%w[Upgrade]).where.not(id: already_chosen)
+      @upgrade_addons = assigned_products_for_step(6).reject { |a| already_chosen.include?(a.id) }
+      @upgrade_addons = addons_for_categories(%w[Upgrade]).where.not(id: already_chosen) if @upgrade_addons.empty? && !@has_assignments
       @selected_upgrade_ids = @config.addons_for_step(6).map(&:id)
     end
+  end
+
+  # ── Assignment-basierte Abfragen ──────────────────────────────────────────
+
+  def assigned_locations
+    ids = ConfiguratorAssignment.location_ids_for(@conf_type)
+    if ids.any?
+      # Reihenfolge aus Assignments beibehalten
+      Location.active.includes(:city).where(id: ids)
+              .sort_by { |l| ids.index(l.id) }
+    else
+      # Fallback: alle aktiven Locations (solange keine Assignments hinterlegt)
+      Location.active.includes(:city).order("cities.name, locations.name")
+    end
+  end
+
+  def assigned_products_for_step(step)
+    ids = ConfiguratorAssignment.product_ids_for(@conf_type, step)
+    return [] if ids.empty?
+    Product.active.where(id: ids).sort_by { |p| ids.index(p.id) }
   end
 
   def addons_for_categories(categories)
     product_type = @config.product&.type
     scope = Addon.active.where("crm_attributes->>'category' IN (?)", categories)
-    # Filter nach applies_to wenn Hauptprodukt bekannt
     if product_type
-      scope = scope.where(
-        "crm_attributes->'applies_to' @> ?", [product_type].to_json
-      )
+      scope = scope.where("crm_attributes->'applies_to' @> ?", [product_type].to_json)
     end
     scope.order(Arel.sql("crm_attributes->>'name'"))
   end
