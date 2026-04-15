@@ -79,6 +79,4 @@ test:
 #
 production:
   <<: *default
-  database: satconfig_production
-  username: satconfig
-  password: <%= ENV["SATCONFIG_DATABASE_PASSWORD"] %>
+  url: <%= ENV["DATABASE_URL"] %>
