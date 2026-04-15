@@ -1,0 +1,29 @@
+<nav class="conf-steps">
+  <% ::Configuration::STEPS.each do |num, label| %>
+    <%
+      is_active = (num == current_step)
+      is_done   = config.completed_step?(num) && num < current_step
+      css_class = if is_active then "conf-steps__item--active"
+                 elsif is_done then "conf-steps__item--done"
+                 else ""
+                 end
+    %>
+    <div class="conf-steps__item <%= css_class %>">
+      <% if config.accessible_step?(num) && !is_active %>
+        <%= link_to configurator_step_path(config.share_token, num),
+                    class: "conf-steps__number text-decoration-none" do %>
+          <% if is_done %>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          <% else %>
+            <%= num %>
+          <% end %>
+        <% end %>
+      <% else %>
+        <div class="conf-steps__number"><%= num %></div>
+      <% end %>
+      <span class="conf-steps__label"><%= label %></span>
+    </div>
+  <% end %>
+</nav>

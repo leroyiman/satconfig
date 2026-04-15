@@ -1,0 +1,44 @@
+<% if @step == 6 || @step == 7 %>
+  <%# Steps 6+7 haben ein eigenes 2-Spalten-Layout ohne Sidebar %>
+  <%= render "configurator/steps/step_#{@step}",
+             config: @config,
+             step:   @step %>
+<% else %>
+  <%# Steps 1–5: Content + Sidebar %>
+  <div class="conf-body">
+    <main class="conf-main">
+      <%# Top-Navigation %>
+      <div class="conf-nav conf-nav--top d-flex justify-content-between align-items-center">
+        <div></div>
+        <div class="d-flex gap-2">
+          <% if @step > 1 %>
+            <%= link_to "Zurück",
+                        configurator_step_path(@config.share_token, @step - 1),
+                        class: "conf-btn-back" %>
+          <% else %>
+            <span class="conf-btn-back" style="opacity:0.3; cursor:default;">Zurück</span>
+          <% end %>
+          <button form="step-form" type="submit" class="conf-btn-next">Weiter</button>
+        </div>
+      </div>
+
+      <%# Step-Inhalt %>
+      <%= render "configurator/steps/step_#{@step}",
+                 config: @config,
+                 step:   @step %>
+
+      <%# Bottom-Navigation %>
+      <div class="conf-nav conf-nav--bottom d-flex justify-content-end">
+        <% if @step > 1 %>
+          <%= link_to "Zurück",
+                      configurator_step_path(@config.share_token, @step - 1),
+                      class: "conf-btn-back" %>
+        <% end %>
+        <button form="step-form" type="submit" class="conf-btn-next">Weiter</button>
+      </div>
+    </main>
+
+    <%# Live-Zusammenfassung Sidebar %>
+    <%= render "configurator/shared/summary_sidebar", config: @config %>
+  </div>
+<% end %>

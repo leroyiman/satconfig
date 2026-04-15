@@ -1,0 +1,131 @@
+<% content_for :breadcrumb do %>
+  <li class="breadcrumb-item"><%= link_to "Dashboard", admin_root_path %></li>
+  <li class="breadcrumb-item"><%= link_to "Produkte", admin_products_path(type: @product.type) %></li>
+  <li class="breadcrumb-item active"><%= @product.effective_attr("name") || "Produkt" %></li>
+<% end %>
+
+<%# ── Header ──────────────────────────────────────────────────────────── %>
+<div class="d-flex align-items-start justify-content-between mb-4">
+  <div>
+    <div class="d-flex align-items-center gap-2 mb-1">
+      <span class="badge bg-<%= product_type_color(@product.type) %> fs-6 px-3 py-2">
+        <i class="fa-solid <%= product_type_icon(@product.type) %> me-1"></i>
+        <%= product_type_label(@product.type) %>
+      </span>
+      <% if @product.local_attributes.present? %>
+        <span class="badge bg-warning text-dark">
+          <i class="fa-solid fa-pen-to-square me-1"></i>
+          <%= @product.local_attributes.keys.count %> Override(s) aktiv
+        </span>
+      <% end %>
+      <% unless @product.active? %>
+        <span class="badge bg-danger">Inaktiv (Zoho)</span>
+      <% end %>
+    </div>
+    <h4 class="fw-bold mb-0"><%= @product.effective_attr("name") || "Unbenanntes Produkt" %></h4>
+    <p class="text-muted small mb-0">
+      <i class="fa-solid fa-map-pin me-1"></i><%= @product.location.name %> &nbsp;·&nbsp;
+      <i class="fa-solid fa-city me-1"></i><%= @product.city.name %> &nbsp;·&nbsp;
+      <i class="fa-solid fa-fingerprint me-1"></i>Zoho ID: <code><%= @product.zoho_product_id || "—" %></code>
+      <% if @product.last_synced_at %>
+        &nbsp;·&nbsp;<i class="fa-solid fa-rotate me-1"></i>
+        Letzter Sync: <%= @product.last_synced_at.strftime("%d.%m.%Y %H:%M") %>
+      <% end %>
+    </p>
+  </div>
+  <%= link_to admin_products_path(type: @product.type),
+              class: "btn btn-outline-secondary btn-sm" do %>
+    <i class="fa-solid fa-arrow-left me-1"></i>Zurück
+  <% end %>
+</div>
+
+<div class="row g-4">
+  <%# ── Linke Spalte: CRM-Informationen + Preis-Overrides ────────────── %>
+  <div class="col-lg-7">
+
+    <%# CRM-Rohdaten (read-only) %>
+    <% unless crm_display_fields_for(@product).empty? %>
+      <div class="admin-card mb-4">
+        <div class="card-header d-flex align-items-center gap-2">
+          <i class="fa-solid fa-database text-muted"></i>
+          CRM-Informationen
+          <span class="badge bg-light text-muted ms-auto" style="font-size:0.65rem">
+            Nur lesbar – via Zoho verwaltet
+          </span>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm mb-0 small">
+            <tbody>
+              <% crm_display_fields_for(@product).each do |field| %>
+                <tr>
+                  <td class="ps-3 text-muted fw-medium" style="width:40%">
+                    <%= field[:label] %>
+                  </td>
+                  <td class="crm-value">
+                    <% val = @product.crm_attributes[field[:key]] %>
+                    <% if val.is_a?(Array) %>
+                      <%= applies_to_badges(val) %>
+                    <% else %>
+                      <%= val.presence || "—" %>
+                    <% end %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    <% end %>
+
+    <%# Preis-Overrides %>
+    <%= render "admin/products/override_form", product: @product,
+               overridable: @overridable %>
+
+  </div>
+
+  <%# ── Rechte Spalte: Übersetzungen ───────────────────────────────── %>
+  <div class="col-lg-5">
+    <div class="admin-card">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i class="fa-solid fa-language text-muted"></i>
+        Übersetzungen
+        <span class="badge bg-secondary ms-auto"><%= @translations.count %></span>
+      </div>
+
+      <% if @translations.empty? %>
+        <div class="card-body text-center text-muted py-4 small">
+          <i class="fa-solid fa-globe mb-2 d-block fs-4"></i>
+          Noch keine Übersetzungen synchronisiert.
+        </div>
+      <% else %>
+        <div class="accordion accordion-flush" id="translationAccordion">
+          <% @translations.each_with_index do |trans, idx| %>
+            <div class="accordion-item border-0 border-bottom">
+              <h2 class="accordion-header">
+                <button class="accordion-button <%= idx > 0 ? 'collapsed' : '' %> py-3 small fw-medium"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#trans-<%= trans.id %>">
+                  <%= language_flag(trans.language) %>
+                  <span class="ms-2"><%= trans.language.upcase %></span>
+                  <% if trans.name_overridden? || trans.description_overridden? %>
+                    <span class="badge bg-warning text-dark ms-2" style="font-size:0.6rem">
+                      Override
+                    </span>
+                  <% end %>
+                </button>
+              </h2>
+              <div id="trans-<%= trans.id %>"
+                   class="accordion-collapse collapse <%= idx == 0 ? 'show' : '' %>"
+                   data-bs-parent="#translationAccordion">
+                <div class="accordion-body pt-0 pb-3">
+                  <%= render "admin/product_translations/form", translation: trans %>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

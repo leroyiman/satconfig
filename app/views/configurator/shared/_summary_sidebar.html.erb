@@ -1,0 +1,117 @@
+<%# Locals: config (Configuration) %>
+
+<aside class="conf-sidebar" id="summary-sidebar">
+
+  <%# Gesamt ─────────────────────────────────────────────────────────────── %>
+  <div class="conf-sidebar-total">
+    <span class="conf-sidebar-total__label">Gesamt</span>
+    <div>
+      <span class="conf-sidebar-total__amount">
+        <%= number_to_currency(config.total_price, unit: "", delimiter: ".", separator: ",") %> <%= config.currency %>
+      </span>
+      <span class="conf-sidebar-total__period">pro Monat</span>
+    </div>
+  </div>
+
+  <%# Location Bild ──────────────────────────────────────────────────────── %>
+  <% if config.location %>
+    <div style="padding: 0 0.75rem;">
+      <div style="height:130px; background:#d8d4cc; border-radius:0.5rem; overflow:hidden;">
+        <%# Bild-ID aus Zoho – in Produktion via Zoho File API ersetzen %>
+        <div style="width:100%; height:100%; background:linear-gradient(135deg,#c8bfb0,#a89880);
+                    display:flex; align-items:center; justify-content:center; color:#7a6f62; font-size:0.8rem;">
+          <%= config.location.name %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="conf-sidebar-items">
+
+    <%# Adresse ─────────────────────────────────────────────────────────── %>
+    <% if config.location %>
+      <div class="conf-sidebar-section">
+        <div class="conf-sidebar-section__label">Adresse</div>
+        <div class="conf-sidebar-section__row">
+          <div>
+            <div class="conf-sidebar-section__name"><%= config.location.name %></div>
+            <div class="conf-sidebar-section__sub">
+              <%= config.location.address&.truncate(50) %>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <%# Typ (Hauptprodukt) ──────────────────────────────────────────────── %>
+    <% if config.product %>
+      <% pd = config.product_price_display %>
+      <div class="conf-sidebar-section">
+        <div class="conf-sidebar-section__label">Typ</div>
+        <div class="conf-sidebar-section__row">
+          <div class="conf-sidebar-section__name">
+            <%= config.product.effective_attr("name") || config.product.type %>
+          </div>
+          <div class="conf-sidebar-section__price">
+            <% if pd[:original] %>
+              <span class="conf-sidebar-section__price-original">
+                <%= format_conf_price(pd[:original], config.currency) %>
+              </span>
+            <% end %>
+            <%= format_conf_price(pd[:current], config.currency) %>
+            <% if pd[:discount_percent] %>
+              <span class="badge-discount ms-1">-<%= pd[:discount_percent] %>%</span>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <%# Addons nach Step ────────────────────────────────────────────────── %>
+    <% step_labels = { 3 => "Erreichbarkeit", 4 => "Meetings", 5 => "Membership", 6 => "Upgrade" } %>
+
+    <% [3, 4, 5, 6].each do |step_num| %>
+      <% step_addons = config.addons_for_step(step_num) %>
+      <% next if step_addons.empty? %>
+
+      <div class="conf-sidebar-section">
+        <div class="conf-sidebar-section__label"><%= step_labels[step_num] %></div>
+        <% step_addons.each do |addon| %>
+          <% ad = config.addon_price_display(addon) %>
+          <div class="conf-sidebar-section__row mb-1">
+            <div>
+              <div class="conf-sidebar-section__name" style="font-size:0.82rem;">
+                <%= addon.effective_attr("name") %>
+              </div>
+            </div>
+            <div class="conf-sidebar-section__price" style="font-size:0.82rem;">
+              <% if ad[:original] %>
+                <span class="conf-sidebar-section__price-original">
+                  <%= format_conf_price(ad[:original], config.currency) %>
+                </span>
+              <% end %>
+              <%= format_conf_price(ad[:current], config.currency) %>
+              <% if ad[:discount_percent] %>
+                <span class="badge-discount">-<%= ad[:discount_percent] %>%</span>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
+    <%# Kein PostScan etc. wenn Step 3 schon gemacht aber kein Post-Addon ─ %>
+    <% if config.current_step > 3 && config.addons_for_step(3).none? { |a| a.crm_attributes["category"] == "Post" } %>
+      <div class="conf-sidebar-section">
+        <div class="conf-sidebar-section__label">Post</div>
+        <div class="conf-sidebar-section__row">
+          <div class="conf-sidebar-section__name" style="font-size:0.82rem; color:#999;">
+            Kein PostScan
+          </div>
+          <div class="conf-sidebar-section__price" style="font-size:0.82rem;">0 €</div>
+        </div>
+      </div>
+    <% end %>
+
+  </div>
+</aside>

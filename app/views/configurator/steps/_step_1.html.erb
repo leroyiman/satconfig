@@ -1,0 +1,78 @@
+<%# Step 1: Adresse / Location wählen %>
+
+<h2 class="conf-question">Welche Adresse repräsentiert Sie am besten?</h2>
+
+<%= form_with url: configurator_step_path(config.share_token, 1),
+              method: :patch,
+              id: "step-form",
+              data: { controller: "card-select", "card-select-mode-value": "radio" } do |f| %>
+
+  <div class="conf-card-grid" data-card-select-target="grid">
+    <% @locations.each do |location| %>
+      <%
+        is_selected = config.location_id == location.id
+        # Preisvorschau: günstigstes aktives Produkt der Location
+        preview_product = location.products.active
+                                  .where(type: %w[VirtualOffice CompanyHeadquarter])
+                                  .first
+        ph = preview_product ? product_price_hash(preview_product) : nil
+      %>
+
+      <div class="conf-card <%= 'is-selected' if is_selected %>"
+           data-card-select-target="card"
+           data-value="<%= location.id %>"
+           data-input-name="location_id">
+
+        <%# Bild-Platzhalter (Zoho picture_id) %>
+        <div class="conf-card__image"
+             style="background: linear-gradient(135deg,#c8bfb0,#a89880);
+                    display:flex; align-items:center; justify-content:center;
+                    color:#7a6f62; font-size:0.75rem; font-weight:500;">
+          <%= location.name %>
+        </div>
+
+        <div class="conf-card__body">
+          <div class="conf-card__header">
+            <div class="conf-card__radio">
+              <div class="conf-card__radio-dot"></div>
+              <span><%= location.name %></span>
+            </div>
+          </div>
+
+          <div class="conf-card__address">
+            <%= location.address %>
+          </div>
+
+          <% if ph %>
+            <div class="conf-card__price-row">
+              <span class="conf-card__price-label">Preis</span>
+              <div class="conf-card__price">
+                <% if ph[:original] %>
+                  <span class="conf-card__price-original">
+                    <%= format_conf_price(ph[:original], location.currency) %>
+                  </span>
+                <% end %>
+                <span><%= format_conf_price(ph[:current], location.currency) %></span>
+                <span class="conf-card__period">/ Monat</span>
+                <% if ph[:discount_percent] %>
+                  <span class="badge-discount">-<%= ph[:discount_percent] %>%</span>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+
+        <%# Verstecktes Input – wird per Stimulus gesetzt %>
+        <input type="radio" name="location_id" value="<%= location.id %>"
+               <%= "checked" if is_selected %> style="display:none;">
+      </div>
+    <% end %>
+  </div>
+
+  <% if @locations.empty? %>
+    <div class="text-center py-5 text-muted">
+      <p>Noch keine Locations verfügbar. Bitte zuerst Daten aus Zoho synchronisieren.</p>
+    </div>
+  <% end %>
+
+<% end %>

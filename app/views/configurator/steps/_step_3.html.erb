@@ -1,0 +1,135 @@
+<%# Step 3: Erreichbarkeit – Telefonservice (Radio) + Addons (Checkboxen) %>
+
+<h2 class="conf-question">Während der Arbeit auch erreichbar für Ihre Kunden sein?</h2>
+
+<%= form_with url: configurator_step_path(config.share_token, 3),
+              method: :patch,
+              id: "step-form",
+              data: { controller: "card-select" } do |f| %>
+
+  <%# ── Telefonservice (Radio: einer oder keiner) ─────────────────────── %>
+  <% selected_phone_id = @selected_addon_ids.find { |id| @phone_addons.map(&:id).include?(id) } %>
+
+  <div class="conf-card-grid conf-card-grid--2col mb-4"
+       data-card-select-target="grid"
+       data-card-select-mode-value="radio-optional">
+
+    <%# Telefonservice Optionen %>
+    <% @phone_addons.each do |addon| %>
+      <%
+        is_selected = selected_phone_id == addon.id
+        ph = addon_price_hash(addon)
+        name = addon.effective_name("de") || addon.effective_attr("name")
+        desc = addon.effective_description("de")
+        features = desc.present? ? Nokogiri::HTML(desc).css("li").map(&:text) : []
+        is_popular = addon.crm_attributes["popular"] == true
+      %>
+      <div class="conf-card <%= 'is-selected' if is_selected %>"
+           data-card-select-target="card"
+           data-value="<%= addon.id %>"
+           data-input-name="addon_ids[]"
+           data-select-group="phone">
+
+        <div class="conf-card__body">
+          <div class="conf-card__radio mb-2">
+            <div class="conf-card__radio-dot"></div>
+            <span><%= name %></span>
+            <% if is_popular %>
+              <span class="badge-popular ms-auto">Beliebt</span>
+            <% end %>
+          </div>
+
+          <% if features.any? %>
+            <ul class="conf-card__features">
+              <% features.first(6).each do |feat| %><li><%= feat %></li><% end %>
+            </ul>
+          <% end %>
+
+          <div class="conf-card__price-row">
+            <span class="conf-card__price-label">Preis</span>
+            <div class="conf-card__price">
+              <% if ph[:original] %>
+                <span class="conf-card__price-original">
+                  <%= format_conf_price(ph[:original], config.currency) %>
+                </span>
+              <% end %>
+              <span><%= format_conf_price(ph[:current], config.currency) %></span>
+              <span class="conf-card__period">/ Monat</span>
+              <% if ph[:discount_percent] %>
+                <span class="badge-discount">-<%= ph[:discount_percent] %>%</span>
+              <% end %>
+            </div>
+          </div>
+        </div>
+        <input type="checkbox" name="addon_ids[]" value="<%= addon.id %>"
+               <%= "checked" if is_selected %> style="display:none;">
+      </div>
+    <% end %>
+
+    <%# "Kein Telefonservice" Option %>
+    <% no_phone_selected = selected_phone_id.nil? %>
+    <div class="conf-card <%= 'is-selected' if no_phone_selected %>"
+         data-card-select-target="card"
+         data-value=""
+         data-input-name="addon_ids[]"
+         data-select-group="phone"
+         data-no-selection="true">
+      <div class="conf-card__body" style="min-height: 120px; display:flex; flex-direction:column; justify-content:space-between;">
+        <div class="conf-card__radio mb-2">
+          <div class="conf-card__radio-dot"></div>
+          <span>Kein Telefonservice</span>
+        </div>
+        <div class="conf-card__price-row">
+          <span class="conf-card__price-label">Preis</span>
+          <div class="conf-card__price">0 <span class="conf-card__period">/ Monat</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%# ── Extra Addons (Checkboxen, Multi-Select) ───────────────────────── %>
+  <% all_extra = (@extra_addons.to_a + @post_addons.to_a).uniq %>
+  <% if all_extra.any? %>
+    <p class="conf-section-title">Addons</p>
+    <div class="conf-card-grid conf-card-grid--2col"
+         data-card-select-target="grid"
+         data-card-select-mode-value="checkbox">
+      <% all_extra.each do |addon| %>
+        <%
+          is_selected = @selected_addon_ids.include?(addon.id)
+          ph = addon_price_hash(addon)
+          name = addon.effective_name("de") || addon.effective_attr("name")
+          desc = addon.effective_description("de")
+          features = desc.present? ? Nokogiri::HTML(desc).css("li").map(&:text) : []
+        %>
+        <div class="conf-card <%= 'is-selected' if is_selected %>"
+             data-card-select-target="card"
+             data-value="<%= addon.id %>"
+             data-input-name="addon_ids[]"
+             data-select-mode="checkbox">
+          <div class="conf-card__body">
+            <div class="conf-card__radio mb-2">
+              <div class="conf-card__checkbox-dot"></div>
+              <span><%= name %></span>
+            </div>
+            <% if features.any? %>
+              <ul class="conf-card__features">
+                <% features.first(4).each do |f| %><li><%= f %></li><% end %>
+              </ul>
+            <% end %>
+            <div class="conf-card__price-row">
+              <span class="conf-card__price-label">Preis</span>
+              <div class="conf-card__price">
+                <span><%= format_conf_price(ph[:current], config.currency) %></span>
+                <span class="conf-card__period">/ Monat</span>
+              </div>
+            </div>
+          </div>
+          <input type="checkbox" name="addon_ids[]" value="<%= addon.id %>"
+                 <%= "checked" if is_selected %> style="display:none;">
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+<% end %>

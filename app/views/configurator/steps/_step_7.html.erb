@@ -1,0 +1,152 @@
+<%# Step 7: Anfrage stellen %>
+
+<div class="conf-summary-layout">
+
+  <%# ── Linke Spalte: Finale Konfiguration ─────────────────────────── %>
+  <div>
+    <h2 class="conf-question mb-4">Finale Konfiguration</h2>
+
+    <div class="conf-summary-card">
+      <div class="conf-summary-card__total">
+        <span>Gesamt</span>
+        <span class="conf-summary-card__total-amount">
+          <%= format_conf_price(config.total_price, config.currency) %>
+        </span>
+      </div>
+      <div class="text-muted small mb-3">pro Monat</div>
+
+      <div class="conf-summary-card__image"
+           style="background: linear-gradient(135deg,#c8bfb0,#a89880);
+                  display:flex; align-items:center; justify-content:center;
+                  color:#7a6f62; font-size:0.85rem;">
+        <%= config.location&.name %>
+      </div>
+
+      <%# Alle Zeilen %>
+      <% if config.location %>
+        <div class="conf-sidebar-section">
+          <div class="conf-sidebar-section__label">Adresse</div>
+          <div class="conf-sidebar-section__name"><%= config.location.name %></div>
+          <div class="conf-sidebar-section__sub"><%= config.location.address %></div>
+        </div>
+      <% end %>
+
+      <% if config.product %>
+        <% pd = config.product_price_display %>
+        <div class="conf-sidebar-section">
+          <div class="conf-sidebar-section__label">Typ</div>
+          <div class="conf-sidebar-section__row">
+            <span class="conf-sidebar-section__name">
+              <%= config.product.effective_attr("name") || config.product.type %>
+            </span>
+            <span class="conf-sidebar-section__price">
+              <%= format_conf_price(pd[:current], config.currency) %>
+            </span>
+          </div>
+        </div>
+      <% end %>
+
+      <% { 3 => "Erreichbarkeit", 4 => "Meetings", 5 => "Membership", 6 => "Upgrade" }.each do |s, label| %>
+        <% sadds = config.addons_for_step(s) %>
+        <% next if sadds.empty? %>
+        <div class="conf-sidebar-section">
+          <div class="conf-sidebar-section__label"><%= label %></div>
+          <% sadds.each do |addon| %>
+            <% ad = config.addon_price_display(addon) %>
+            <div class="conf-sidebar-section__row mb-1">
+              <span class="conf-sidebar-section__name" style="font-size:0.82rem;">
+                <%= addon.effective_attr("name") %>
+              </span>
+              <span class="conf-sidebar-section__price" style="font-size:0.82rem;">
+                <%= format_conf_price(ad[:current], config.currency) %>
+              </span>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <%# ── Rechte Spalte: Kontaktformular ─────────────────────────────── %>
+  <div>
+    <h2 class="conf-question mb-4">Anfrage stellen</h2>
+
+    <%= form_with url: configurator_step_path(config.share_token, 7),
+                  method: :patch,
+                  id: "step-form",
+                  class: "conf-contact-form" do |f| %>
+
+      <div class="form-group">
+        <label>Vorname *</label>
+        <%= f.text_field "configuration[contact_first_name]",
+                         value: config.contact_first_name,
+                         placeholder: "Vorname",
+                         required: true %>
+      </div>
+
+      <div class="form-group">
+        <label>Nachname</label>
+        <%= f.text_field "configuration[contact_last_name]",
+                         value: config.contact_last_name,
+                         placeholder: "Nachname" %>
+      </div>
+
+      <div class="form-group">
+        <label>Firmenname</label>
+        <%= f.text_field "configuration[contact_company]",
+                         value: config.contact_company,
+                         placeholder: "Ihre Firma GmbH" %>
+      </div>
+
+      <div class="form-group">
+        <label>Adresse</label>
+        <%= f.text_field "configuration[contact_address]",
+                         value: config.contact_address,
+                         placeholder: "Straße und Hausnummer" %>
+      </div>
+
+      <div class="row g-2">
+        <div class="col-4">
+          <div class="form-group">
+            <label>PLZ</label>
+            <%= f.text_field "configuration[contact_postal_code]",
+                             value: config.contact_postal_code,
+                             placeholder: "10115" %>
+          </div>
+        </div>
+        <div class="col-8">
+          <div class="form-group">
+            <label>Stadt</label>
+            <%= f.text_field "configuration[contact_city]",
+                             value: config.contact_city,
+                             placeholder: "Berlin" %>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Ihre E-Mail Adresse *</label>
+        <%= f.email_field "configuration[contact_email]",
+                          value: config.contact_email,
+                          placeholder: "name@firma.de",
+                          required: true %>
+      </div>
+
+      <div class="form-group">
+        <label>Ihre Telefonnummer</label>
+        <%= f.telephone_field "configuration[contact_phone]",
+                              value: config.contact_phone,
+                              placeholder: "+49 30 12345678" %>
+      </div>
+
+      <button type="submit" class="conf-btn-next conf-btn-next--full mt-3">
+        Abschicken
+      </button>
+
+      <p class="text-muted small text-center mt-2">
+        Mit dem Absenden stimmen Sie unserer Datenschutzerklärung zu.
+      </p>
+    <% end %>
+  </div>
+
+</div>

@@ -1,0 +1,320 @@
+{
+  "_documentation": {
+    "description": "Dieses Dokument beschreibt alle Webhook-Payloads, die von Zoho CRM an die Satellite Office Konfigurator-API gesendet werden müssen.",
+    "endpoint": "POST https://config.satellite-office.com/api/v1/zoho/webhook",
+    "authentication": {
+      "method": "Bearer Token (HTTP Authorization Header)",
+      "header": "Authorization: Bearer <ZOHO_WEBHOOK_SECRET>",
+      "note": "Der Token wird einmalig von Satellite Office bereitgestellt und muss bei jedem Request mitgesendet werden."
+    },
+    "content_type": "application/json",
+    "response": {
+      "success": { "status": 202, "body": { "status": "accepted" } },
+      "auth_error": { "status": 401, "body": { "error": "Unauthorized" } },
+      "validation_error": { "status": 422, "body": { "error": "..." } }
+    },
+    "event_types": [
+      "city.created", "city.updated", "city.deleted",
+      "location.created", "location.updated", "location.deleted",
+      "conference_room.created", "conference_room.updated", "conference_room.deleted",
+      "office.created", "office.updated", "office.deleted",
+      "virtual_office.created", "virtual_office.updated", "virtual_office.deleted",
+      "company_headquarter.created", "company_headquarter.updated", "company_headquarter.deleted",
+      "addon.created", "addon.updated", "addon.deleted"
+    ],
+    "notes": [
+      "zoho_id muss die eindeutige Zoho CRM Record ID sein und darf sich nie ändern.",
+      "Für *.deleted Events reichen event, entity_type, zoho_id und triggered_at.",
+      "translations ist ein Array – alle verfügbaren Sprachversionen auf einmal senden.",
+      "Preise immer als String mit Dezimalpunkt übergeben, z.B. '890.00'.",
+      "applies_to bei Addons als Array von Typ-Strings: ['Office', 'VirtualOffice', ...]"
+    ]
+  },
+
+  "examples": {
+
+    "city": {
+
+      "city_created_or_updated": {
+        "_comment": "Wird gesendet wenn eine Stadt in Zoho angelegt oder aktualisiert wird.",
+        "event": "city.created",
+        "entity_type": "city",
+        "zoho_id": "CITY-001-ZO",
+        "triggered_at": "2026-04-14T08:00:00Z",
+        "data": {
+          "name": "Berlin",
+          "currency": "EUR"
+        }
+      },
+
+      "city_deleted": {
+        "_comment": "Wird gesendet wenn eine Stadt in Zoho gelöscht / deaktiviert wird.",
+        "event": "city.deleted",
+        "entity_type": "city",
+        "zoho_id": "CITY-001-ZO",
+        "triggered_at": "2026-04-14T08:05:00Z",
+        "data": {}
+      }
+
+    },
+
+    "location": {
+
+      "location_created_or_updated": {
+        "_comment": "city_zoho_id muss einer bereits synchronisierten Stadt entsprechen.",
+        "event": "location.created",
+        "entity_type": "location",
+        "zoho_id": "LOC-BER-001-ZO",
+        "triggered_at": "2026-04-14T08:10:00Z",
+        "data": {
+          "name": "Satellite Office Berlin Mitte",
+          "address": "Friedrichstraße 100, 10117 Berlin, Deutschland",
+          "city_zoho_id": "CITY-001-ZO",
+          "language": "de",
+          "picture_id": "ZO-IMG-4521",
+          "phone": "+49 30 12345678",
+          "email": "berlin@satelliteoffice.de",
+          "website": "https://satelliteoffice.de/berlin"
+        }
+      },
+
+      "location_deleted": {
+        "event": "location.deleted",
+        "entity_type": "location",
+        "zoho_id": "LOC-BER-001-ZO",
+        "triggered_at": "2026-04-14T08:15:00Z",
+        "data": {}
+      }
+
+    },
+
+    "conference_room": {
+
+      "conference_room_created_or_updated": {
+        "_comment": "Nur name-Übersetzungen – Conference Rooms haben keine description.",
+        "event": "conference_room.created",
+        "entity_type": "conference_room",
+        "zoho_id": "CR-BER-101-ZO",
+        "triggered_at": "2026-04-14T09:00:00Z",
+        "data": {
+          "name": "Boardroom Alpha",
+          "number_of_people": 12,
+          "picture_id": "ZO-IMG-7890",
+          "location_zoho_id": "LOC-BER-001-ZO",
+          "price_intern": "45.00",
+          "price_extern": "75.00",
+          "translations": [
+            {
+              "language": "de",
+              "name": "Konferenzraum Alpha"
+            },
+            {
+              "language": "en",
+              "name": "Boardroom Alpha"
+            },
+            {
+              "language": "fr",
+              "name": "Salle de conférence Alpha"
+            }
+          ]
+        }
+      },
+
+      "conference_room_deleted": {
+        "event": "conference_room.deleted",
+        "entity_type": "conference_room",
+        "zoho_id": "CR-BER-101-ZO",
+        "triggered_at": "2026-04-14T09:05:00Z",
+        "data": {}
+      }
+
+    },
+
+    "office": {
+
+      "office_created_or_updated": {
+        "_comment": "description in Übersetzungen darf HTML enthalten (ul/li Listen).",
+        "event": "office.created",
+        "entity_type": "office",
+        "zoho_id": "OFF-BER-201-ZO",
+        "triggered_at": "2026-04-14T09:10:00Z",
+        "data": {
+          "name": "Office 3A",
+          "square_meters": 28,
+          "workspaces": 3,
+          "floor": "3. OG",
+          "floor_plan_image_id": "ZO-IMG-3310",
+          "location_zoho_id": "LOC-BER-001-ZO",
+          "price_3": "990.00",
+          "price_12": "850.00",
+          "translations": [
+            {
+              "language": "de",
+              "name": "Büro 3A",
+              "description": "<ul><li>28 m² helles Einzelbüro</li><li>3 vollwertige Arbeitsplätze</li><li>Klimaanlage & Heizung inklusive</li><li>Highspeed-Internet (1 Gbit/s)</li><li>Zugang zu allen Gemeinschaftsflächen</li></ul>"
+            },
+            {
+              "language": "en",
+              "name": "Office 3A",
+              "description": "<ul><li>28 m² bright private office</li><li>3 fully equipped workspaces</li><li>Air conditioning & heating included</li><li>High-speed internet (1 Gbit/s)</li><li>Access to all common areas</li></ul>"
+            }
+          ]
+        }
+      },
+
+      "office_deleted": {
+        "event": "office.deleted",
+        "entity_type": "office",
+        "zoho_id": "OFF-BER-201-ZO",
+        "triggered_at": "2026-04-14T09:15:00Z",
+        "data": {}
+      }
+
+    },
+
+    "virtual_office": {
+
+      "virtual_office_created_or_updated": {
+        "event": "virtual_office.created",
+        "entity_type": "virtual_office",
+        "zoho_id": "VO-BER-301-ZO",
+        "triggered_at": "2026-04-14T09:20:00Z",
+        "data": {
+          "name": "Virtual Office Basic",
+          "location_zoho_id": "LOC-BER-001-ZO",
+          "price_3": "89.00",
+          "price_12": "75.00",
+          "translations": [
+            {
+              "language": "de",
+              "name": "Virtuelles Büro Basic",
+              "description": "<ul><li>Geschäftsadresse in Berlin Mitte</li><li>Postempfang & -weiterleitung</li><li>Telefonservice auf Anfrage buchbar</li><li>Nutzung der Lounge (10h/Monat)</li></ul>"
+            },
+            {
+              "language": "en",
+              "name": "Virtual Office Basic",
+              "description": "<ul><li>Business address in Berlin Mitte</li><li>Mail receipt & forwarding</li><li>Phone service available on request</li><li>Lounge access (10h/month)</li></ul>"
+            }
+          ]
+        }
+      },
+
+      "virtual_office_deleted": {
+        "event": "virtual_office.deleted",
+        "entity_type": "virtual_office",
+        "zoho_id": "VO-BER-301-ZO",
+        "triggered_at": "2026-04-14T09:25:00Z",
+        "data": {}
+      }
+
+    },
+
+    "company_headquarter": {
+
+      "company_headquarter_created_or_updated": {
+        "event": "company_headquarter.created",
+        "entity_type": "company_headquarter",
+        "zoho_id": "HQ-BER-401-ZO",
+        "triggered_at": "2026-04-14T09:30:00Z",
+        "data": {
+          "name": "Company HQ Premium",
+          "location_zoho_id": "LOC-BER-001-ZO",
+          "price_3": "290.00",
+          "price_12": "249.00",
+          "translations": [
+            {
+              "language": "de",
+              "name": "Firmensitz Premium",
+              "description": "<ul><li>Repräsentative Geschäftsadresse</li><li>Eigene Telefonnummer mit Sekretariatsservice</li><li>Eintrag im Hausverzeichnis</li><li>Nutzung von Meetingräumen (5h/Monat)</li><li>Postbearbeitung & digitale Weiterleitung</li></ul>"
+            },
+            {
+              "language": "en",
+              "name": "Company HQ Premium",
+              "description": "<ul><li>Representative business address</li><li>Dedicated phone number with secretarial service</li><li>Entry in building directory</li><li>Meeting room access (5h/month)</li><li>Mail handling & digital forwarding</li></ul>"
+            }
+          ]
+        }
+      },
+
+      "company_headquarter_deleted": {
+        "event": "company_headquarter.deleted",
+        "entity_type": "company_headquarter",
+        "zoho_id": "HQ-BER-401-ZO",
+        "triggered_at": "2026-04-14T09:35:00Z",
+        "data": {}
+      }
+
+    },
+
+    "addon": {
+
+      "addon_created_or_updated": {
+        "_comment": "applies_to definiert auf welche Produkt-Typen dieser Addon buchbar ist.",
+        "event": "addon.created",
+        "entity_type": "addon",
+        "zoho_id": "ADD-001-ZO",
+        "triggered_at": "2026-04-14T09:40:00Z",
+        "data": {
+          "name": "Parkplatz",
+          "location_zoho_id": "LOC-BER-001-ZO",
+          "billing_type": "monthly",
+          "category": "Mobility",
+          "unit": "pro Stellplatz",
+          "applies_to": ["Office", "VirtualOffice", "CompanyHeadquarter"],
+          "price_per_location": "75.00",
+          "translations": [
+            {
+              "language": "de",
+              "name": "Parkplatz",
+              "description": "<ul><li>Fester Tiefgaragenstellplatz</li><li>24/7 Zugang</li><li>Monatlich kündbar</li></ul>"
+            },
+            {
+              "language": "en",
+              "name": "Parking Space",
+              "description": "<ul><li>Dedicated underground parking spot</li><li>24/7 access</li><li>Monthly cancellation</li></ul>"
+            }
+          ]
+        }
+      },
+
+      "addon_all_product_types": {
+        "_comment": "Beispiel: Addon gilt für alle Produkt-Typen.",
+        "event": "addon.created",
+        "entity_type": "addon",
+        "zoho_id": "ADD-002-ZO",
+        "triggered_at": "2026-04-14T09:45:00Z",
+        "data": {
+          "name": "Kaffee-Flatrate",
+          "location_zoho_id": "LOC-BER-001-ZO",
+          "billing_type": "monthly",
+          "category": "Catering",
+          "unit": "pro Person",
+          "applies_to": ["ConferenceRoom", "Office", "VirtualOffice", "CompanyHeadquarter"],
+          "price_per_location": "29.00",
+          "translations": [
+            {
+              "language": "de",
+              "name": "Kaffee-Flatrate",
+              "description": "<ul><li>Unbegrenzt Kaffee, Tee & Wasser</li><li>Professionelle Kaffeemaschine</li><li>Täglich frische Milch</li></ul>"
+            },
+            {
+              "language": "en",
+              "name": "Coffee Flat Rate",
+              "description": "<ul><li>Unlimited coffee, tea & water</li><li>Professional coffee machine</li><li>Fresh milk daily</li></ul>"
+            }
+          ]
+        }
+      },
+
+      "addon_deleted": {
+        "event": "addon.deleted",
+        "entity_type": "addon",
+        "zoho_id": "ADD-001-ZO",
+        "triggered_at": "2026-04-14T09:50:00Z",
+        "data": {}
+      }
+
+    }
+
+  }
+}

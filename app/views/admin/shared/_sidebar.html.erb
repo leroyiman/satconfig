@@ -1,0 +1,66 @@
+<a class="sidebar-brand" href="<%= admin_root_path %>">
+  <span>Satellite Office</span>
+  <strong>Admin Panel</strong>
+</a>
+
+<nav class="mt-2">
+  <p class="nav-section">Übersicht</p>
+  <%= link_to admin_root_path,
+              class: "nav-link #{current_page?(admin_root_path) ? 'active' : ''}" do %>
+    <i class="fa-solid fa-gauge-high fa-fw"></i> Dashboard
+  <% end %>
+
+  <p class="nav-section mt-3">Produkte</p>
+
+  <%= link_to admin_products_path,
+              class: "nav-link #{controller_name == 'products' && params[:type].blank? ? 'active' : ''}" do %>
+    <i class="fa-solid fa-layer-group fa-fw"></i> Alle Produkte
+  <% end %>
+
+  <%= link_to admin_products_path(type: "ConferenceRoom"),
+              class: "nav-link #{params[:type] == 'ConferenceRoom' ? 'active' : ''}" do %>
+    <i class="fa-solid fa-users fa-fw"></i> Conference Rooms
+  <% end %>
+
+  <%= link_to admin_products_path(type: "Office"),
+              class: "nav-link #{params[:type] == 'Office' ? 'active' : ''}" do %>
+    <i class="fa-solid fa-building fa-fw"></i> Offices
+  <% end %>
+
+  <%= link_to admin_products_path(type: "VirtualOffice"),
+              class: "nav-link #{params[:type] == 'VirtualOffice' ? 'active' : ''}" do %>
+    <i class="fa-solid fa-wifi fa-fw"></i> Virtual Offices
+  <% end %>
+
+  <%= link_to admin_products_path(type: "CompanyHeadquarter"),
+              class: "nav-link #{params[:type] == 'CompanyHeadquarter' ? 'active' : ''}" do %>
+    <i class="fa-solid fa-landmark fa-fw"></i> Company HQ
+  <% end %>
+
+  <%= link_to admin_products_path(type: "Addon"),
+              class: "nav-link #{params[:type] == 'Addon' ? 'active' : ''}" do %>
+    <i class="fa-solid fa-puzzle-piece fa-fw"></i> Addons
+  <% end %>
+
+  <p class="nav-section mt-3">Struktur</p>
+
+  <%= link_to admin_locations_path,
+              class: "nav-link #{controller_name == 'locations' ? 'active' : ''}" do %>
+    <i class="fa-solid fa-map-pin fa-fw"></i> Locations & Städte
+  <% end %>
+
+  <p class="nav-section mt-3">Overrides</p>
+
+  <%= link_to admin_products_path(overrides_only: "1"),
+              class: "nav-link #{params[:overrides_only] == '1' ? 'active' : ''}" do %>
+    <i class="fa-solid fa-pen-to-square fa-fw"></i> Nur Overrides
+  <% end %>
+</nav>
+
+<div class="sidebar-footer">
+  <div class="text-truncate"><i class="fa-solid fa-circle-nodes fa-fw me-1"></i>Zoho CRM Sync</div>
+  <div class="mt-1 small" style="color:#445">
+    <%= link_to "Webhook-Doku", "/docs/zoho_webhook_payload_examples.json",
+                target: "_blank", style: "color: inherit; opacity: 0.6;" %>
+  </div>
+</div>

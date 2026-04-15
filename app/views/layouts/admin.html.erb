@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin – Satellite Office</title>
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <%= stylesheet_link_tag "application", media: "all" %>
+    <%= javascript_importmap_tags %>
+    <style>
+      :root {
+        --sidebar-width: 260px;
+        --sidebar-bg: #1a1f2e;
+        --sidebar-accent: #2d3548;
+        --sidebar-text: #a8b2cc;
+        --sidebar-active: #ffffff;
+        --sidebar-highlight: #4f6ef7;
+      }
+
+      body { background: #f4f6fb; }
+
+      /* ── Sidebar ─────────────────────────────────────────────── */
+      .admin-sidebar {
+        width: var(--sidebar-width);
+        min-height: 100vh;
+        background: var(--sidebar-bg);
+        position: fixed;
+        top: 0; left: 0;
+        display: flex;
+        flex-direction: column;
+        z-index: 100;
+      }
+
+      .admin-sidebar .sidebar-brand {
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid var(--sidebar-accent);
+        text-decoration: none;
+      }
+
+      .admin-sidebar .sidebar-brand span {
+        font-size: 0.7rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--sidebar-highlight);
+        display: block;
+      }
+
+      .admin-sidebar .sidebar-brand strong {
+        color: #fff;
+        font-size: 1.1rem;
+      }
+
+      .admin-sidebar .nav-section {
+        padding: 0.75rem 1rem 0.25rem;
+        font-size: 0.65rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #556;
+        font-weight: 600;
+      }
+
+      .admin-sidebar .nav-link {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        padding: 0.55rem 1.5rem;
+        color: var(--sidebar-text);
+        font-size: 0.875rem;
+        text-decoration: none;
+        border-left: 3px solid transparent;
+        transition: all 0.15s;
+      }
+
+      .admin-sidebar .nav-link:hover {
+        color: var(--sidebar-active);
+        background: var(--sidebar-accent);
+        border-left-color: var(--sidebar-highlight);
+      }
+
+      .admin-sidebar .nav-link.active {
+        color: var(--sidebar-active);
+        background: var(--sidebar-accent);
+        border-left-color: var(--sidebar-highlight);
+        font-weight: 500;
+      }
+
+      .admin-sidebar .nav-link .fa-fw { color: inherit; font-size: 0.85rem; }
+
+      .admin-sidebar .sidebar-footer {
+        margin-top: auto;
+        padding: 1rem 1.5rem;
+        border-top: 1px solid var(--sidebar-accent);
+        font-size: 0.8rem;
+        color: var(--sidebar-text);
+      }
+
+      /* ── Main Content ──────────────────────────────────────────── */
+      .admin-main {
+        margin-left: var(--sidebar-width);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .admin-topbar {
+        background: #fff;
+        border-bottom: 1px solid #e8ecf4;
+        padding: 0.875rem 1.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: sticky;
+        top: 0;
+        z-index: 50;
+      }
+
+      .admin-content {
+        padding: 1.75rem;
+        flex: 1;
+      }
+
+      /* ── Cards & Tables ────────────────────────────────────────── */
+      .admin-card {
+        background: #fff;
+        border: 1px solid #e8ecf4;
+        border-radius: 0.625rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      }
+
+      .admin-card .card-header {
+        background: transparent;
+        border-bottom: 1px solid #e8ecf4;
+        padding: 1rem 1.25rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+
+      /* ── Override Status ───────────────────────────────────────── */
+      .override-row { transition: background 0.15s; }
+      .override-row:hover { background: #fafbff; }
+      .badge-overridden { font-size: 0.7rem; }
+
+      .crm-value {
+        font-family: monospace;
+        font-size: 0.85rem;
+        color: #6c757d;
+      }
+
+      .override-value {
+        font-family: monospace;
+        font-size: 0.85rem;
+        color: #198754;
+        font-weight: 600;
+      }
+
+      /* ── Stat Cards ────────────────────────────────────────────── */
+      .stat-card {
+        background: #fff;
+        border: 1px solid #e8ecf4;
+        border-radius: 0.625rem;
+        padding: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .stat-icon {
+        width: 48px; height: 48px;
+        border-radius: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="admin-sidebar">
+      <%= render "admin/shared/sidebar" %>
+    </div>
+
+    <div class="admin-main">
+      <div class="admin-topbar">
+        <nav aria-label="breadcrumb" class="mb-0">
+          <ol class="breadcrumb mb-0 small">
+            <%= yield :breadcrumb %>
+          </ol>
+        </nav>
+        <div class="d-flex align-items-center gap-3">
+          <span class="text-muted small">
+            <i class="fa-solid fa-circle fa-xs text-success me-1"></i>
+            <%= current_user.email %>
+          </span>
+          <%= link_to "Logout", destroy_user_session_path, data: { turbo_method: :delete },
+                      class: "btn btn-sm btn-outline-secondary" %>
+        </div>
+      </div>
+
+      <div class="admin-content">
+        <%= render "admin/shared/flash" %>
+        <%= yield %>
+      </div>
+    </div>
+  </body>
+</html>

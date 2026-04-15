@@ -1,0 +1,15 @@
+<% if notice.present? %>
+  <div class="alert alert-success alert-dismissible d-flex align-items-center mb-3" role="alert">
+    <i class="fa-solid fa-circle-check me-2"></i>
+    <%= notice %>
+    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+  </div>
+<% end %>
+
+<% if alert.present? %>
+  <div class="alert alert-danger alert-dismissible d-flex align-items-center mb-3" role="alert">
+    <i class="fa-solid fa-circle-exclamation me-2"></i>
+    <%= alert %>
+    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+  </div>
+<% end %>

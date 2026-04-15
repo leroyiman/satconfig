@@ -1,0 +1,100 @@
+<%# Step 4: Meetings – Calculator + Pakete %>
+
+<h2 class="conf-question">Meetings</h2>
+
+<%= form_with url: configurator_step_path(config.share_token, 4),
+              method: :patch,
+              id: "step-form",
+              data: { controller: "card-select", "card-select-mode-value": "radio-optional" } do |f| %>
+
+  <%# ── Meeting-Calculator ─────────────────────────────────────────────── %>
+  <div class="conf-calculator"
+       data-controller="meetings-calculator"
+       data-meetings-calculator-packages-value="<%= @meeting_packages.map { |p|
+         { id: p.id, price: p.effective_attr('price_per_location').to_f }
+       }.to_json %>">
+
+    <p class="conf-calculator__title">
+      Ermitteln Sie ihr durchschnittliches Meeting Aufkommen
+    </p>
+    <div class="conf-calculator__fields">
+      <div class="conf-calculator__field">
+        <label>Durchschnittliche Meetings pro Monat</label>
+        <input type="number" min="0" placeholder="Geschätzte Anzahl eingeben"
+               data-meetings-calculator-target="meetings"
+               data-action="input->meetings-calculator#calculate">
+      </div>
+      <div class="conf-calculator__field">
+        <label>Durchschnittliche Anzahl an Personen pro Meeting</label>
+        <input type="number" min="0" placeholder="Geschätzte Anzahl eingeben"
+               data-meetings-calculator-target="persons"
+               data-action="input->meetings-calculator#calculate">
+      </div>
+      <button type="button" class="conf-calculator__btn"
+              data-action="meetings-calculator#recommend">
+        Empfehlung ermitteln
+      </button>
+    </div>
+  </div>
+
+  <%# ── Meeting Pakete (Radio, optional) ──────────────────────────────── %>
+  <p class="conf-section-title">Optionen</p>
+  <% selected_id = @selected_addon_ids.first %>
+
+  <div class="conf-card-grid" data-card-select-target="grid">
+    <% @meeting_packages.each do |pkg| %>
+      <%
+        is_selected  = selected_id == pkg.id
+        ph           = addon_price_hash(pkg)
+        name         = pkg.effective_name("de") || pkg.effective_attr("name")
+        desc         = pkg.effective_description("de") || pkg.effective_attr("description").to_s
+        is_recommend = pkg.crm_attributes["recommended"] == true
+      %>
+      <div class="conf-card <%= 'is-selected' if is_selected %>"
+           id="meeting-pkg-<%= pkg.id %>"
+           data-card-select-target="card"
+           data-value="<%= pkg.id %>"
+           data-input-name="addon_ids[]"
+           data-pkg-price="<%= ph[:current] %>">
+
+        <div class="conf-card__body">
+          <div class="conf-card__radio mb-2">
+            <div class="conf-card__radio-dot"></div>
+            <span><%= name %></span>
+            <% if is_recommend %>
+              <span class="badge-recommended ms-auto">Empfehlung</span>
+            <% end %>
+          </div>
+
+          <% if desc.present? %>
+            <p class="conf-card__description"><%= desc.truncate(140) %></p>
+          <% end %>
+
+          <div class="conf-card__price-row">
+            <span class="conf-card__price-label">Preis</span>
+            <div class="conf-card__price">
+              <% if ph[:original] %>
+                <span class="conf-card__price-original">
+                  <%= format_conf_price(ph[:original], config.currency) %>
+                </span>
+              <% end %>
+              <span><%= format_conf_price(ph[:current], config.currency) %></span>
+              <span class="conf-card__period">/ Monat</span>
+              <% if ph[:discount_percent] %>
+                <span class="badge-discount">-<%= ph[:discount_percent] %>%</span>
+              <% end %>
+            </div>
+          </div>
+        </div>
+
+        <input type="checkbox" name="addon_ids[]" value="<%= pkg.id %>"
+               <%= "checked" if is_selected %> style="display:none;">
+      </div>
+    <% end %>
+  </div>
+
+  <% if @meeting_packages.empty? %>
+    <p class="text-muted small">Keine Meeting-Pakete verfügbar.</p>
+  <% end %>
+
+<% end %>

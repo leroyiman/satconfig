@@ -1,2 +1,221 @@
-<h1>Pages#home</h1>
-<p>Find me in app/views/pages/home.html.erb</p>
+<% content_for :hero_class, "conf-hero--tall" %>
+
+<style>
+  .home-hero-content {
+    max-width: 700px;
+    margin: 3.5rem auto 0;
+    padding: 0 1.5rem;
+    text-align: center;
+  }
+
+  .home-eyebrow {
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 0.6rem;
+    font-weight: 500;
+  }
+
+  .home-headline {
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.2;
+    margin-bottom: 0.75rem;
+    letter-spacing: -0.02em;
+  }
+
+  .home-subline {
+    font-size: 1rem;
+    color: rgba(255,255,255,0.65);
+    margin-bottom: 0;
+  }
+
+  /* ── Karten-Grid ─────────────────────────────────────── */
+  .home-cards {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 4rem;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+  }
+
+  @media (max-width: 700px) {
+    .home-cards { grid-template-columns: 1fr; }
+  }
+
+  .home-card {
+    background: #fff;
+    border: 1.5px solid #e0ddd6;
+    border-radius: 0.875rem;
+    padding: 2rem 1.5rem 1.75rem;
+    text-decoration: none;
+    color: #1a1a1a;
+    display: flex;
+    flex-direction: column;
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .home-card:hover:not(.home-card--soon) {
+    border-color: #1a1a1a;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.10);
+    transform: translateY(-2px);
+    color: #1a1a1a;
+  }
+
+  .home-card--soon {
+    opacity: 0.55;
+    cursor: default;
+  }
+
+  .home-card__icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 0.625rem;
+    background: #f7f4ee;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+    margin-bottom: 1.25rem;
+    flex-shrink: 0;
+  }
+
+  .home-card__soon-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: #f0ede8;
+    color: #9a9080;
+    padding: 0.2rem 0.55rem;
+    border-radius: 0.25rem;
+  }
+
+  .home-card__title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+  }
+
+  .home-card__desc {
+    font-size: 0.83rem;
+    color: #6b6b6b;
+    line-height: 1.55;
+    flex: 1;
+    margin-bottom: 1.5rem;
+  }
+
+  .home-card__cta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    border-top: 1px solid #e8e5df;
+    padding-top: 1rem;
+  }
+
+  .home-card--soon .home-card__cta {
+    color: #bbb;
+  }
+
+  .home-card__arrow {
+    width: 28px;
+    height: 28px;
+    background: #1a1a1a;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s;
+  }
+
+  .home-card:hover:not(.home-card--soon) .home-card__arrow {
+    background: #333;
+  }
+
+  .home-card--soon .home-card__arrow {
+    background: #ddd;
+  }
+</style>
+
+<%# ── Hero-Inhalt (über dem Header der Seite) ────────────────────────── %>
+<div class="home-hero-content">
+  <p class="home-eyebrow">Satellite Office Konfigurator</p>
+  <h1 class="home-headline">Was möchten Sie konfigurieren?</h1>
+  <p class="home-subline">Stellen Sie Ihr ideales Büropaket in wenigen Schritten zusammen.</p>
+</div>
+
+<%# ── Karten ─────────────────────────────────────────────────────────── %>
+<div class="home-cards">
+
+  <%# 1 – Geschäftsadresse %>
+  <%= link_to configurator_path, class: "home-card" do %>
+    <div class="home-card__icon">🏢</div>
+    <h2 class="home-card__title">Geschäftsadresse konfigurieren</h2>
+    <p class="home-card__desc">
+      Wählen Sie Ihren Standort, Adresstyp und passende Zusatzleistungen wie
+      Telefonservice, Postbearbeitung und Meetingräume.
+    </p>
+    <div class="home-card__cta">
+      <span>Jetzt konfigurieren</span>
+      <div class="home-card__arrow">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M2.5 6h7M6.5 3l3 3-3 3" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+  <% end %>
+
+  <%# 2 – Office (Coming Soon) %>
+  <div class="home-card home-card--soon">
+    <span class="home-card__soon-badge">Demnächst</span>
+    <div class="home-card__icon">🪑</div>
+    <h2 class="home-card__title">Office konfigurieren</h2>
+    <p class="home-card__desc">
+      Finden Sie das passende Büro nach Fläche, Etage und Ausstattung –
+      flexibel ab 3 oder 12 Monaten buchbar.
+    </p>
+    <div class="home-card__cta">
+      <span>Bald verfügbar</span>
+      <div class="home-card__arrow">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M2.5 6h7M6.5 3l3 3-3 3" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <%# 3 – Meeting (Coming Soon) %>
+  <div class="home-card home-card--soon">
+    <span class="home-card__soon-badge">Demnächst</span>
+    <div class="home-card__icon">📅</div>
+    <h2 class="home-card__title">Meeting konfigurieren</h2>
+    <p class="home-card__desc">
+      Buchen Sie Konferenzräume nach Personenzahl, Standort und Zeitraum –
+      inklusive Catering und Technik-Optionen.
+    </p>
+    <div class="home-card__cta">
+      <span>Bald verfügbar</span>
+      <div class="home-card__arrow">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M2.5 6h7M6.5 3l3 3-3 3" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+</div>

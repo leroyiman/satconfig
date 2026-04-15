@@ -1,0 +1,77 @@
+<%# Step 2: Typ – VirtualOffice oder CompanyHeadquarter %>
+
+<h2 class="conf-question">Welche Art von Geschäftsadresse benötigen Sie?</h2>
+
+<%= form_with url: configurator_step_path(config.share_token, 2),
+              method: :patch,
+              id: "step-form",
+              data: { controller: "card-select", "card-select-mode-value": "radio" } do |f| %>
+
+  <div class="conf-card-grid conf-card-grid--2col" data-card-select-target="grid">
+
+    <% [@virtual_offices, @company_headquarters].flatten.each do |product| %>
+      <%
+        is_selected = config.product_id == product.id
+        ph          = product_price_hash(product)
+        name        = product.effective_name(config.location&.language) ||
+                      product.effective_attr("name") ||
+                      product.type
+        desc        = product.effective_description(config.location&.language) ||
+                      product.effective_description("de")
+        features    = desc.present? ? Nokogiri::HTML(desc).css("li").map(&:text) : []
+        is_popular  = product.crm_attributes["popular"] == true
+      %>
+
+      <div class="conf-card <%= 'is-selected' if is_selected %>"
+           data-card-select-target="card"
+           data-value="<%= product.id %>"
+           data-input-name="product_id">
+
+        <div class="conf-card__body">
+          <div class="conf-card__radio mb-3">
+            <div class="conf-card__radio-dot"></div>
+            <span><%= name %></span>
+            <% if is_popular %>
+              <span class="badge-popular ms-auto">Beliebt</span>
+            <% end %>
+          </div>
+
+          <% if features.any? %>
+            <ul class="conf-card__features">
+              <% features.first(6).each do |feat| %>
+                <li><%= feat %></li>
+              <% end %>
+            </ul>
+          <% elsif desc.present? %>
+            <p class="conf-card__description"><%= desc.gsub(/<[^>]+>/, "").truncate(120) %></p>
+          <% end %>
+
+          <div class="conf-card__price-row">
+            <span class="conf-card__price-label">Preis</span>
+            <div class="conf-card__price">
+              <% if ph[:original] %>
+                <span class="conf-card__price-original">
+                  <%= format_conf_price(ph[:original], config.currency) %>
+                </span>
+              <% end %>
+              <span><%= format_conf_price(ph[:current], config.currency) %></span>
+              <span class="conf-card__period">/ Monat</span>
+              <% if ph[:discount_percent] %>
+                <span class="badge-discount">-<%= ph[:discount_percent] %>%</span>
+              <% end %>
+            </div>
+          </div>
+        </div>
+
+        <input type="radio" name="product_id" value="<%= product.id %>"
+               <%= "checked" if is_selected %> style="display:none;">
+      </div>
+    <% end %>
+
+  </div>
+
+  <% if @virtual_offices.empty? && @company_headquarters.empty? %>
+    <p class="text-muted">Keine Produkte für diese Location verfügbar.</p>
+  <% end %>
+
+<% end %>

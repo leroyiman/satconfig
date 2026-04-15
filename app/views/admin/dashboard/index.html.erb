@@ -1,0 +1,160 @@
+<% content_for :breadcrumb do %>
+  <li class="breadcrumb-item active">Dashboard</li>
+<% end %>
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h4 class="mb-0 fw-bold">Dashboard</h4>
+    <p class="text-muted small mb-0">Übersicht aller Produkte und aktiven Overrides</p>
+  </div>
+</div>
+
+<%# ── Stat Cards ───────────────────────────────────────────────────────── %>
+<div class="row g-3 mb-4">
+
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="stat-icon bg-primary bg-opacity-10">
+        <i class="fa-solid fa-map-pin text-primary"></i>
+      </div>
+      <div>
+        <div class="fw-bold fs-5"><%= @stats[:locations] %></div>
+        <div class="text-muted small">Locations</div>
+        <div class="text-muted" style="font-size:0.72rem"><%= @stats[:cities] %> Städte</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="stat-icon bg-success bg-opacity-10">
+        <i class="fa-solid fa-layer-group text-success"></i>
+      </div>
+      <div>
+        <div class="fw-bold fs-5">
+          <%= @stats[:conference_rooms] + @stats[:offices] + @stats[:virtual_offices] + @stats[:company_headquarters] + @stats[:addons] %>
+        </div>
+        <div class="text-muted small">Produkte gesamt</div>
+        <div class="text-muted" style="font-size:0.72rem">aktiv & synchronisiert</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="stat-icon bg-warning bg-opacity-10">
+        <i class="fa-solid fa-pen-to-square text-warning"></i>
+      </div>
+      <div>
+        <div class="fw-bold fs-5"><%= @overrides_count %></div>
+        <div class="text-muted small">Produkte mit Overrides</div>
+        <%= link_to "Alle anzeigen →", admin_products_path(overrides_only: "1"),
+                    class: "small text-warning text-decoration-none" %>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="stat-icon bg-secondary bg-opacity-10">
+        <i class="fa-solid fa-puzzle-piece text-secondary"></i>
+      </div>
+      <div>
+        <div class="fw-bold fs-5"><%= @stats[:addons] %></div>
+        <div class="text-muted small">Addons</div>
+        <%= link_to "Verwalten →", admin_products_path(type: "Addon"),
+                    class: "small text-secondary text-decoration-none" %>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<%# ── Produkt-Typen Breakdown ─────────────────────────────────────────── %>
+<div class="row g-3 mb-4">
+  <div class="col-md-5">
+    <div class="admin-card h-100">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i class="fa-solid fa-chart-pie text-muted"></i>
+        Produkte nach Typ
+      </div>
+      <div class="card-body p-0">
+        <% [
+             ["ConferenceRoom",     @stats[:conference_rooms]],
+             ["Office",             @stats[:offices]],
+             ["VirtualOffice",      @stats[:virtual_offices]],
+             ["CompanyHeadquarter", @stats[:company_headquarters]],
+             ["Addon",              @stats[:addons]]
+           ].each do |type, count| %>
+          <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge bg-<%= product_type_color(type) %> bg-opacity-15
+                           text-<%= product_type_color(type) %>" style="width:28px">
+                <i class="fa-solid <%= product_type_icon(type) %>"></i>
+              </span>
+              <span class="small"><%= product_type_label(type) %></span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <span class="fw-semibold small"><%= count %></span>
+              <%= link_to "→", admin_products_path(type: type),
+                          class: "small text-muted text-decoration-none" %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <%# ── Zuletzt synchronisiert ──────────────────────────────────────────── %>
+  <div class="col-md-7">
+    <div class="admin-card h-100">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i class="fa-solid fa-rotate text-muted"></i>
+        Zuletzt von Zoho synchronisiert
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0 small">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-3">Produkt</th>
+              <th>Typ</th>
+              <th>Location</th>
+              <th class="pe-3">Sync</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if @recent_syncs.empty? %>
+              <tr>
+                <td colspan="4" class="text-center text-muted py-3 ps-3">
+                  Noch keine Synchronisierungen
+                </td>
+              </tr>
+            <% else %>
+              <% @recent_syncs.each do |product| %>
+                <tr>
+                  <td class="ps-3">
+                    <%= link_to product.effective_attr("name") || "–",
+                                admin_product_path(product),
+                                class: "text-decoration-none text-dark fw-medium" %>
+                    <% if product.local_attributes.present? %>
+                      <span class="badge bg-warning text-dark ms-1" style="font-size:0.6rem">Override</span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <span class="badge bg-<%= product_type_color(product.type) %>">
+                      <%= product_type_label(product.type) %>
+                    </span>
+                  </td>
+                  <td class="text-muted"><%= product.location.name %></td>
+                  <td class="pe-3 text-muted">
+                    <%= product.last_synced_at&.strftime("%d.%m. %H:%M") || "—" %>
+                  </td>
+                </tr>
+              <% end %>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

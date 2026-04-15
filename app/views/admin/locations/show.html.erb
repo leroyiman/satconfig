@@ -1,0 +1,54 @@
+<% content_for :breadcrumb do %>
+  <li class="breadcrumb-item"><%= link_to "Dashboard", admin_root_path %></li>
+  <li class="breadcrumb-item"><%= link_to "Locations", admin_locations_path %></li>
+  <li class="breadcrumb-item active"><%= @location.name %></li>
+<% end %>
+
+<div class="d-flex align-items-start justify-content-between mb-4">
+  <div>
+    <h4 class="fw-bold mb-1"><%= @location.name %></h4>
+    <p class="text-muted small mb-0">
+      <i class="fa-solid fa-city me-1"></i><%= @location.city.name %> &nbsp;·&nbsp;
+      <i class="fa-solid fa-language me-1"></i><%= @location.language&.upcase || "—" %> &nbsp;·&nbsp;
+      <i class="fa-solid fa-envelope me-1"></i><%= @location.email || "—" %>
+    </p>
+  </div>
+  <%= link_to admin_locations_path, class: "btn btn-outline-secondary btn-sm" do %>
+    <i class="fa-solid fa-arrow-left me-1"></i>Zurück
+  <% end %>
+</div>
+
+<% Product::TYPES.each do |type| %>
+  <% products = @products_by_type[type] || [] %>
+  <% next if products.empty? %>
+
+  <div class="admin-card mb-3">
+    <div class="card-header d-flex align-items-center gap-2">
+      <i class="fa-solid <%= product_type_icon(type) %> text-<%= product_type_color(type) %>"></i>
+      <span class="fw-semibold"><%= product_type_label(type) %></span>
+      <span class="badge bg-secondary ms-auto"><%= products.count %></span>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm mb-0 small">
+        <tbody>
+          <% products.each do |product| %>
+            <tr>
+              <td class="ps-3">
+                <%= link_to product.effective_attr("name") || "–",
+                            admin_product_path(product),
+                            class: "text-decoration-none fw-medium text-dark" %>
+                <% if product.local_attributes.present? %>
+                  <span class="badge bg-warning text-dark ms-1" style="font-size:0.6rem">Override</span>
+                <% end %>
+              </td>
+              <td class="text-muted pe-3 text-end">
+                <%= link_to "Bearbeiten →", admin_product_path(product),
+                            class: "small text-muted text-decoration-none" %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<% end %>

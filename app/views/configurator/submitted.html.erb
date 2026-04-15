@@ -1,0 +1,27 @@
+<div style="max-width: 600px; margin: 4rem auto; padding: 0 1.5rem; text-align: center;">
+  <div style="font-size: 3rem; margin-bottom: 1rem;">✓</div>
+  <h1 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 0.75rem;">
+    Vielen Dank für Ihre Anfrage!
+  </h1>
+  <p style="color: #6b6b6b; font-size: 1rem; line-height: 1.6; margin-bottom: 2rem;">
+    Wir haben Ihre Konfiguration erhalten und melden uns so schnell wie möglich bei Ihnen.
+  </p>
+
+  <% if @config&.contact_email.present? %>
+    <p style="color: #6b6b6b; font-size: 0.9rem;">
+      Eine Bestätigung wurde an <strong><%= @config.contact_email %></strong> gesendet.
+    </p>
+  <% end %>
+
+  <div style="background: #F7F4EE; border: 1px solid #E0DDD6; border-radius: 0.75rem;
+              padding: 1.5rem; margin-top: 2rem; text-align: left;">
+    <p style="font-weight: 600; margin-bottom: 0.5rem;">Ihre Konfiguration:</p>
+    <p style="font-size: 1.5rem; font-weight: 800; margin: 0;">
+      <%= format_conf_price(@config.total_price, @config.currency) %>
+      <span style="font-size: 0.8rem; font-weight: 400; color: #6b6b6b;">pro Monat</span>
+    </p>
+  </div>
+
+  <%= link_to "Neue Konfiguration starten", configurator_path,
+              class: "conf-btn-next d-inline-block mt-4 text-decoration-none" %>
+</div>

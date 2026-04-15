@@ -1,0 +1,86 @@
+<%= form_with url: admin_product_translation_path(translation),
+              method: :patch, local: true do |f| %>
+
+  <%# Name ── CRM vs. Override %>
+  <div class="mb-3">
+    <label class="form-label small fw-semibold mb-1">
+      Name
+      <% if translation.name_overridden? %>
+        <span class="badge bg-warning text-dark ms-1" style="font-size:0.6rem">Override aktiv</span>
+      <% end %>
+    </label>
+
+    <% if translation.crm_name.present? %>
+      <div class="d-flex align-items-center gap-1 mb-1">
+        <span class="badge bg-light text-muted" style="font-size:0.65rem">CRM</span>
+        <span class="crm-value small"><%= translation.crm_name %></span>
+      </div>
+    <% end %>
+
+    <div class="input-group input-group-sm">
+      <%= f.text_field :local_name,
+                       value: translation.local_name,
+                       placeholder: translation.crm_name || "Override eingeben…",
+                       class: "form-control #{'border-warning' if translation.name_overridden?}" %>
+      <% if translation.name_overridden? %>
+        <%= button_to reset_override_admin_product_translation_path(translation, field: "name"),
+                      method: :patch,
+                      class: "btn btn-sm btn-outline-secondary",
+                      title: "Name-Override zurücksetzen" do %>
+          <i class="fa-solid fa-rotate-left"></i>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+
+  <%# Description ── nur wenn Typ eine hat %>
+  <div class="mb-3">
+    <label class="form-label small fw-semibold mb-1">
+      Beschreibung (HTML)
+      <% if translation.description_overridden? %>
+        <span class="badge bg-warning text-dark ms-1" style="font-size:0.6rem">Override aktiv</span>
+      <% end %>
+    </label>
+
+    <% if translation.crm_description.present? %>
+      <div class="d-flex align-items-start gap-1 mb-1">
+        <span class="badge bg-light text-muted mt-1" style="font-size:0.65rem; flex-shrink:0">CRM</span>
+        <div class="crm-value small text-break" style="max-height:60px; overflow:auto;">
+          <%= translation.crm_description&.truncate(180) %>
+        </div>
+      </div>
+    <% end %>
+
+    <div class="input-group input-group-sm align-items-start">
+      <%= f.text_area :local_description,
+                      value: translation.local_description,
+                      placeholder: "HTML-Override (z.B. <ul><li>...</li></ul>)",
+                      rows: 4,
+                      class: "form-control font-monospace #{'border-warning' if translation.description_overridden?}",
+                      style: "font-size:0.78rem" %>
+      <% if translation.description_overridden? %>
+        <%= button_to reset_override_admin_product_translation_path(translation, field: "description"),
+                      method: :patch,
+                      class: "btn btn-sm btn-outline-secondary",
+                      title: "Beschreibungs-Override zurücksetzen" do %>
+          <i class="fa-solid fa-rotate-left"></i>
+        <% end %>
+      <% end %>
+    </div>
+    <div class="form-text">Leer lassen = CRM-Beschreibung wird verwendet.</div>
+  </div>
+
+  <div class="d-flex gap-2">
+    <%= f.submit "Speichern",
+                 class: "btn btn-primary btn-sm px-3" %>
+    <% if translation.name_overridden? || translation.description_overridden? %>
+      <%= button_to reset_override_admin_product_translation_path(translation),
+                    method: :patch,
+                    class: "btn btn-sm btn-outline-danger",
+                    form: { "data-turbo-confirm": "Alle Overrides für #{translation.language.upcase} zurücksetzen?" } do %>
+        <i class="fa-solid fa-rotate-left me-1"></i>Alles zurücksetzen
+      <% end %>
+    <% end %>
+  </div>
+
+<% end %>

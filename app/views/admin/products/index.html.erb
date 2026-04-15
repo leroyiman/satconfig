@@ -1,0 +1,128 @@
+<% content_for :breadcrumb do %>
+  <li class="breadcrumb-item"><%= link_to "Dashboard", admin_root_path %></li>
+  <li class="breadcrumb-item active">Produkte</li>
+<% end %>
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h4 class="mb-0 fw-bold">
+      <% if params[:type].present? %>
+        <i class="fa-solid <%= product_type_icon(params[:type]) %>
+           text-<%= product_type_color(params[:type]) %> me-2"></i>
+        <%= product_type_label(params[:type]) %>
+      <% elsif params[:overrides_only] == "1" %>
+        <i class="fa-solid fa-pen-to-square text-warning me-2"></i>Produkte mit Overrides
+      <% else %>
+        <i class="fa-solid fa-layer-group text-muted me-2"></i>Alle Produkte
+      <% end %>
+    </h4>
+    <p class="text-muted small mb-0"><%= @total %> Produkte gefunden</p>
+  </div>
+</div>
+
+<%# ── Filter ──────────────────────────────────────────────────────────── %>
+<div class="admin-card mb-3">
+  <div class="card-body py-2 px-3">
+    <%= form_with url: admin_products_path, method: :get, local: true,
+                  class: "d-flex flex-wrap gap-2 align-items-center" do |f| %>
+
+      <%= f.select :type,
+            options_for_select(
+              [["Alle Typen", ""]] + AdminHelper::PRODUCT_TYPE_LABELS.map { |k,v| [v, k] },
+              params[:type]
+            ),
+            {},
+            class: "form-select form-select-sm", style: "width:180px" %>
+
+      <%= f.select :location_id,
+            options_for_select(
+              [["Alle Locations", ""]] + @locations.map { |l| ["#{l.city.name} – #{l.name}", l.id] },
+              params[:location_id]
+            ),
+            {},
+            class: "form-select form-select-sm", style: "width:230px" %>
+
+      <div class="form-check form-check-inline ms-1 mb-0">
+        <%= f.check_box :overrides_only, { checked: params[:overrides_only] == "1",
+                                           class: "form-check-input" }, "1", "" %>
+        <%= f.label :overrides_only, "Nur Overrides", class: "form-check-label small" %>
+      </div>
+
+      <%= f.submit "Filtern", class: "btn btn-sm btn-primary" %>
+      <%= link_to "Zurücksetzen", admin_products_path, class: "btn btn-sm btn-outline-secondary" %>
+    <% end %>
+  </div>
+</div>
+
+<%# ── Tabelle ─────────────────────────────────────────────────────────── %>
+<div class="admin-card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th class="ps-3" style="width: 35%">Produkt</th>
+          <th>Typ</th>
+          <th>Location</th>
+          <th>Stadt</th>
+          <th>CRM-Preis</th>
+          <th>Override</th>
+          <th class="pe-3">Sync</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if @products.empty? %>
+          <tr>
+            <td colspan="7" class="text-center text-muted py-4">
+              Keine Produkte gefunden.
+            </td>
+          </tr>
+        <% else %>
+          <% @products.each do |product| %>
+            <tr class="override-row">
+              <td class="ps-3">
+                <%= link_to admin_product_path(product),
+                            class: "text-decoration-none fw-medium text-dark" do %>
+                  <%= product.effective_attr("name") || "<em>Kein Name</em>".html_safe %>
+                <% end %>
+                <% if product.local_attributes.present? %>
+                  <span class="badge bg-warning text-dark ms-1 badge-overridden">
+                    <i class="fa-solid fa-pen-to-square me-1"></i>Override
+                  </span>
+                <% end %>
+              </td>
+              <td>
+                <span class="badge bg-<%= product_type_color(product.type) %>">
+                  <%= product_type_label(product.type) %>
+                </span>
+              </td>
+              <td class="text-muted small"><%= product.location.name %></td>
+              <td class="text-muted small"><%= product.city.name %></td>
+              <td class="crm-value">
+                <% main_price_key = case product.type
+                                    when "ConferenceRoom" then "price_extern"
+                                    when "Addon"          then "price_per_location"
+                                    else "price_3"
+                                    end %>
+                <% crm_val = product.crm_attributes[main_price_key] %>
+                <%= crm_val.present? ? "#{product.currency} #{crm_val}" : "—" %>
+              </td>
+              <td>
+                <% local_val = product.local_attributes[main_price_key] %>
+                <% if local_val.present? %>
+                  <span class="override-value">
+                    <%= product.currency %> <%= local_val %>
+                  </span>
+                <% else %>
+                  <span class="text-muted small">–</span>
+                <% end %>
+              </td>
+              <td class="pe-3 text-muted small">
+                <%= product.last_synced_at&.strftime("%d.%m.%y %H:%M") || "—" %>
+              </td>
+            </tr>
+          <% end %>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

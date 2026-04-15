@@ -1,0 +1,51 @@
+<% content_for :breadcrumb do %>
+  <li class="breadcrumb-item"><%= link_to "Dashboard", admin_root_path %></li>
+  <li class="breadcrumb-item active">Locations & Städte</li>
+<% end %>
+
+<h4 class="fw-bold mb-4">
+  <i class="fa-solid fa-map-pin text-muted me-2"></i>Locations & Städte
+</h4>
+
+<% @cities.each do |city| %>
+  <div class="admin-card mb-3">
+    <div class="card-header d-flex align-items-center gap-2">
+      <i class="fa-solid fa-city text-muted"></i>
+      <span class="fw-semibold"><%= city.name %></span>
+      <span class="badge bg-light text-muted ms-1"><%= city.currency %></span>
+      <span class="badge bg-secondary ms-auto"><%= city.locations.active.count %> Locations</span>
+    </div>
+    <% if city.locations.active.any? %>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0 small">
+          <tbody>
+            <% city.locations.active.order(:name).each do |location| %>
+              <tr>
+                <td class="ps-3" style="width:30%">
+                  <%= link_to location.name, admin_location_path(location),
+                              class: "text-decoration-none fw-medium text-dark" %>
+                </td>
+                <td class="text-muted"><%= location.address&.truncate(60) %></td>
+                <td class="text-muted"><%= location.language&.upcase %></td>
+                <td class="pe-3 text-end">
+                  <span class="badge bg-light text-muted">
+                    <%= location.products.active.count %> Produkte
+                  </span>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <div class="card-body text-muted small py-2 ps-3">Keine aktiven Locations</div>
+    <% end %>
+  </div>
+<% end %>
+
+<% if @cities.empty? %>
+  <div class="text-center text-muted py-5">
+    <i class="fa-solid fa-city mb-3 d-block fs-2"></i>
+    Noch keine Städte synchronisiert.
+  </div>
+<% end %>
