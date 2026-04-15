@@ -23,12 +23,10 @@
            data-value="<%= location.id %>"
            data-input-name="location_id">
 
-        <%# Bild-Platzhalter (Zoho picture_id) %>
-        <div class="conf-card__image"
-             style="background: linear-gradient(135deg,#c8bfb0,#a89880);
-                    display:flex; align-items:center; justify-content:center;
-                    color:#7a6f62; font-size:0.75rem; font-weight:500;">
-          <%= location.name %>
+        <%# Location-Bild (URL aus picture_id) %>
+        <div class="conf-card__image" style="overflow:hidden; padding:0;">
+          <%= render "configurator/shared/location_image",
+                     location: location, height: "150px" %>
         </div>
 
         <div class="conf-card__body">

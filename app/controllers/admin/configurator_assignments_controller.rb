@@ -1,64 +1,70 @@
 class Admin::ConfiguratorAssignmentsController < Admin::BaseController
+  before_action :set_location, only: [:index]
+
   def index
     @configurator_type = params[:configurator_type] || "geschaeftsadresse"
+    @locations         = Location.active.includes(:city).order("locations.name")
 
-    # Alle Assignments für diesen Konfigurator
-    @assignments = ConfiguratorAssignment
-                     .for_configurator(@configurator_type)
-                     .includes(:assignable)
-                     .ordered
+    return unless @location
 
-    @location_assignments = @assignments.select { |a| a.assignable_type == "Location" }
-    @product_assignments  = @assignments.select { |a| a.assignable_type == "Product" }
-                                        .group_by(&:step)
+    # Alle Zuweisungen dieser Location für diesen Konfigurator, nach Step gruppiert
+    all = ConfiguratorAssignment
+            .where(location: @location, configurator_type: @configurator_type)
+            .active
+            .ordered
+            .includes(:product)
 
-    # Verfügbare Items die noch NICHT zugewiesen sind
-    assigned_location_ids = @location_assignments.map(&:assignable_id)
-    assigned_product_ids  = @assignments.select { |a| a.assignable_type == "Product" }
-                                        .map(&:assignable_id)
+    @assignments_by_step = all.group_by(&:step)
 
-    @available_locations = Location.active.includes(:city)
-                                   .where.not(id: assigned_location_ids)
-                                   .order("cities.name, locations.name")
-
-    # Produkte nach Step-Typ gruppiert (nur relevante Typen je Konfigurator)
-    relevant_types = case @configurator_type
-                     when "geschaeftsadresse" then %w[VirtualOffice CompanyHeadquarter Addon]
-                     when "office"            then %w[Office Addon]
-                     when "meeting"           then %w[ConferenceRoom Addon]
-                     end
-
-    @available_products = Product.active
-                                 .where(type: relevant_types)
-                                 .where.not(id: assigned_product_ids)
-                                 .includes(:location)
-                                 .order(:type, Arel.sql("crm_attributes->>'name'"))
-                                 .group_by(&:type)
+    # Alle Produkte dieser Location die noch nicht zugewiesen sind
+    assigned_product_ids = all.map(&:product_id)
+    @available_products  = @location.products
+                                    .active
+                                    .where.not(id: assigned_product_ids)
+                                    .order(:type, Arel.sql("crm_attributes->>'name'"))
+                                    .group_by(&:type)
   end
 
   def create
+    location = Location.find(params[:location_id])
+    product  = Product.find(params[:product_id])
+
     assignment = ConfiguratorAssignment.new(
+      location:          location,
+      product:           product,
       configurator_type: params[:configurator_type] || "geschaeftsadresse",
-      assignable_type:   params[:assignable_type],
-      assignable_id:     params[:assignable_id],
-      step:              params[:step].presence&.to_i,
+      step:              params[:step].to_i,
+      selection_type:    params[:selection_type] || "radio",
       position:          params[:position].to_i
     )
 
     if assignment.save
-      redirect_to admin_configurator_assignments_path(configurator_type: assignment.configurator_type),
-                  notice: "Erfolgreich zugewiesen."
+      redirect_to admin_configurator_assignments_path(
+                    location_id: location.id,
+                    configurator_type: assignment.configurator_type
+                  ), notice: "Produkt zugewiesen."
     else
-      redirect_to admin_configurator_assignments_path(configurator_type: assignment.configurator_type),
-                  alert: assignment.errors.full_messages.join(", ")
+      redirect_to admin_configurator_assignments_path(
+                    location_id: location.id,
+                    configurator_type: params[:configurator_type]
+                  ), alert: assignment.errors.full_messages.join(", ")
     end
   end
 
   def destroy
     assignment = ConfiguratorAssignment.find(params[:id])
+    location   = assignment.location
     conf_type  = assignment.configurator_type
     assignment.destroy!
-    redirect_to admin_configurator_assignments_path(configurator_type: conf_type),
-                notice: "Zuweisung entfernt."
+    redirect_to admin_configurator_assignments_path(
+                  location_id: location.id,
+                  configurator_type: conf_type
+                ), notice: "Zuweisung entfernt."
+  end
+
+  private
+
+  def set_location
+    @location = Location.find(params[:location_id]) if params[:location_id].present?
   end
 end

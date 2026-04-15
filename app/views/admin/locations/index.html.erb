@@ -11,26 +11,60 @@
   <div class="admin-card mb-3">
     <div class="card-header d-flex align-items-center gap-2">
       <i class="fa-solid fa-city text-muted"></i>
-      <span class="fw-semibold"><%= city.name %></span>
-      <span class="badge bg-light text-muted ms-1"><%= city.currency %></span>
+      <span class="fw-semibold"><%= city.effective_name %></span>
+      <span class="badge bg-light text-muted ms-1"><%= city.effective_currency %></span>
       <span class="badge bg-secondary ms-auto"><%= city.locations.active.count %> Locations</span>
     </div>
     <% if city.locations.active.any? %>
       <div class="table-responsive">
-        <table class="table table-sm mb-0 small">
+        <table class="table table-sm mb-0 small align-middle">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-3">Name</th>
+              <th>Adresse</th>
+              <th>Produkte</th>
+              <th class="text-center">Im Konfigurator</th>
+              <th class="pe-3"></th>
+            </tr>
+          </thead>
           <tbody>
             <% city.locations.active.order(:name).each do |location| %>
-              <tr>
-                <td class="ps-3" style="width:30%">
-                  <%= link_to location.name, admin_location_path(location),
-                              class: "text-decoration-none fw-medium text-dark" %>
+              <% hidden = location.local_attributes["configurator_hidden"] == "true" %>
+              <tr class="<%= 'opacity-50' if hidden %>">
+                <td class="ps-3 fw-medium">
+                  <%= link_to location.effective_name, admin_location_path(location),
+                              class: "text-decoration-none text-dark" %>
+                  <% if location.local_attributes.except("configurator_hidden").present? %>
+                    <span class="badge bg-warning text-dark ms-1" style="font-size:0.55rem">Override</span>
+                  <% end %>
                 </td>
-                <td class="text-muted"><%= location.address&.truncate(60) %></td>
-                <td class="text-muted"><%= location.language&.upcase %></td>
-                <td class="pe-3 text-end">
+                <td class="text-muted"><%= location.effective_address&.truncate(50) %></td>
+                <td>
                   <span class="badge bg-light text-muted">
-                    <%= location.products.active.count %> Produkte
+                    <%= location.products.active.count %>
                   </span>
+                </td>
+                <td class="text-center">
+                  <% if hidden %>
+                    <%= button_to reset_override_admin_location_path(location, field: "configurator_hidden"),
+                                  method: :patch,
+                                  class: "btn btn-sm btn-outline-success",
+                                  title: "Wieder einblenden" do %>
+                      <i class="fa-solid fa-eye-slash text-danger me-1"></i>Verborgen
+                    <% end %>
+                  <% else %>
+                    <%= button_to admin_location_path(location),
+                                  method: :patch,
+                                  params: { location: { local_attributes: { configurator_hidden: "true" } } },
+                                  class: "btn btn-sm btn-outline-secondary",
+                                  title: "Im Konfigurator verbergen" do %>
+                      <i class="fa-solid fa-eye text-success me-1"></i>Sichtbar
+                    <% end %>
+                  <% end %>
+                </td>
+                <td class="pe-3 text-end">
+                  <%= link_to "Bearbeiten", admin_location_path(location),
+                              class: "btn btn-sm btn-outline-secondary" %>
                 </td>
               </tr>
             <% end %>

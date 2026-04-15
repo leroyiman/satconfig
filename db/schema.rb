@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_04_14_120001) do
+ActiveRecord::Schema[7.1].define(version: 2026_04_15_110000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -23,7 +23,9 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_14_120001) do
     t.datetime "last_synced_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.jsonb "local_attributes", default: {}, null: false
     t.index ["active"], name: "index_cities_on_active"
+    t.index ["local_attributes"], name: "index_cities_on_local_attributes", using: :gin
     t.index ["name"], name: "index_cities_on_name"
     t.index ["zoho_city_id"], name: "index_cities_on_zoho_city_id", unique: true
   end
@@ -65,6 +67,22 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_14_120001) do
     t.index ["zoho_lead_id"], name: "index_configurations_on_zoho_lead_id"
   end
 
+  create_table "configurator_assignments", force: :cascade do |t|
+    t.bigint "location_id", null: false
+    t.bigint "product_id", null: false
+    t.string "configurator_type", default: "geschaeftsadresse", null: false
+    t.integer "step", null: false
+    t.string "selection_type", default: "radio", null: false
+    t.integer "position", default: 0, null: false
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["location_id", "configurator_type", "step", "position"], name: "idx_conf_assignments_lookup"
+    t.index ["location_id", "product_id", "configurator_type"], name: "idx_conf_assignments_unique", unique: true
+    t.index ["location_id"], name: "index_configurator_assignments_on_location_id"
+    t.index ["product_id"], name: "index_configurator_assignments_on_product_id"
+  end
+
   create_table "locations", force: :cascade do |t|
     t.string "zoho_location_id"
     t.bigint "city_id", null: false
@@ -80,9 +98,11 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_14_120001) do
     t.datetime "last_synced_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.jsonb "local_attributes", default: {}, null: false
     t.index ["active"], name: "index_locations_on_active"
     t.index ["city_id", "active"], name: "index_locations_on_city_id_and_active"
     t.index ["city_id"], name: "index_locations_on_city_id"
+    t.index ["local_attributes"], name: "index_locations_on_local_attributes", using: :gin
     t.index ["zoho_location_id"], name: "index_locations_on_zoho_location_id", unique: true
   end
 
@@ -137,6 +157,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_14_120001) do
   add_foreign_key "configuration_addons", "products", column: "addon_id"
   add_foreign_key "configurations", "locations"
   add_foreign_key "configurations", "products"
+  add_foreign_key "configurator_assignments", "locations"
+  add_foreign_key "configurator_assignments", "products"
   add_foreign_key "locations", "cities"
   add_foreign_key "product_translations", "products"
   add_foreign_key "products", "locations"

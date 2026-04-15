@@ -1,18 +1,15 @@
-<%# Step 6: Zusammenfassung + Upgrade Angebote %>
+<%# Step 6: Zusammenfassung + Upgrade-Angebote (dunkel) %>
 
 <%= form_with url: configurator_step_path(config.share_token, 6),
-              method: :patch,
-              id: "step-form",
-              data: { controller: "card-select", "card-select-mode-value": "checkbox" } do |f| %>
+              method: :patch, id: "step-form",
+              data: { controller: "card-select", "card-select-mode-value": "checkbox" } do %>
 
   <div class="conf-summary-layout">
 
     <%# ── Linke Spalte: Zusammenfassung ──────────────────────────────── %>
     <div>
       <h2 class="conf-question mb-4">Zusammenfassung</h2>
-
       <div class="conf-summary-card">
-        <%# Gesamt %>
         <div class="conf-summary-card__total">
           <span>Gesamt</span>
           <span class="conf-summary-card__total-amount">
@@ -21,28 +18,19 @@
         </div>
         <div class="text-muted small mb-2">pro Monat</div>
 
-        <%# Location Bild %>
-        <div class="conf-summary-card__image"
-             style="background: linear-gradient(135deg,#c8bfb0,#a89880);
-                    display:flex; align-items:center; justify-content:center;
-                    color:#7a6f62; font-size:0.85rem;">
-          <%= config.location&.name %>
+        <div class="conf-summary-card__image" style="padding:0; overflow:hidden;">
+          <%= render "configurator/shared/location_image",
+                     location: config.location, height: "160px" %>
         </div>
 
-        <%# Adresse %>
         <% if config.location %>
           <div class="conf-sidebar-section">
             <div class="conf-sidebar-section__label">Adresse</div>
-            <div class="conf-sidebar-section__row">
-              <div>
-                <div class="conf-sidebar-section__name"><%= config.location.name %></div>
-                <div class="conf-sidebar-section__sub"><%= config.location.address %></div>
-              </div>
-            </div>
+            <div class="conf-sidebar-section__name"><%= config.location.effective_name %></div>
+            <div class="conf-sidebar-section__sub"><%= config.location.effective_address %></div>
           </div>
         <% end %>
 
-        <%# Typ %>
         <% if config.product %>
           <% pd = config.product_price_display %>
           <div class="conf-sidebar-section">
@@ -52,58 +40,31 @@
                 <%= config.product.effective_attr("name") || config.product.type %>
               </div>
               <div class="conf-sidebar-section__price">
-                <% if pd[:original] %>
-                  <span class="conf-sidebar-section__price-original">
-                    <%= format_conf_price(pd[:original], config.currency) %>
-                  </span>
-                <% end %>
                 <%= format_conf_price(pd[:current], config.currency) %>
-                <% if pd[:discount_percent] %>
-                  <span class="badge-discount ms-1">-<%= pd[:discount_percent] %>%</span>
-                <% end %>
               </div>
             </div>
           </div>
         <% end %>
 
-        <%# Addons nach Step %>
         <% { 3 => "Erreichbarkeit", 4 => "Meetings", 5 => "Membership" }.each do |s, label| %>
           <% sadds = config.addons_for_step(s) %>
-          <% next if sadds.empty? && s != 3 %>
+          <% next if sadds.empty? %>
           <div class="conf-sidebar-section">
             <div class="conf-sidebar-section__label"><%= label %></div>
-            <% if sadds.empty? %>
-              <div class="conf-sidebar-section__row">
-                <span class="conf-sidebar-section__name" style="color:#999;">Keine Auswahl</span>
-                <span class="conf-sidebar-section__price">0 €</span>
+            <% sadds.each do |addon| %>
+              <% ad = config.addon_price_display(addon) %>
+              <div class="conf-sidebar-section__row mb-1">
+                <span class="conf-sidebar-section__name" style="font-size:0.82rem;">
+                  <%= addon.effective_attr("name") %>
+                </span>
+                <span class="conf-sidebar-section__price" style="font-size:0.82rem;">
+                  <%= format_conf_price(ad[:current], config.currency) %>
+                </span>
               </div>
-            <% else %>
-              <% sadds.each do |addon| %>
-                <% ad = config.addon_price_display(addon) %>
-                <div class="conf-sidebar-section__row mb-1">
-                  <div>
-                    <div class="conf-sidebar-section__name" style="font-size:0.85rem;">
-                      <%= addon.effective_attr("name") %>
-                    </div>
-                  </div>
-                  <div class="conf-sidebar-section__price" style="font-size:0.85rem;">
-                    <% if ad[:original] %>
-                      <span class="conf-sidebar-section__price-original">
-                        <%= format_conf_price(ad[:original], config.currency) %>
-                      </span>
-                    <% end %>
-                    <%= format_conf_price(ad[:current], config.currency) %>
-                    <% if ad[:discount_percent] %>
-                      <span class="badge-discount">-<%= ad[:discount_percent] %>%</span>
-                    <% end %>
-                  </div>
-                </div>
-              <% end %>
             <% end %>
           </div>
         <% end %>
 
-        <%# Gesamt (unten wiederholt) %>
         <div class="conf-summary-card__total mt-3 pt-3 border-top">
           <span>Gesamt</span>
           <span class="conf-summary-card__total-amount" style="font-size:1.5rem;">
@@ -111,72 +72,28 @@
           </span>
         </div>
         <div class="text-muted small mb-3">pro Monat</div>
-
-        <button type="submit" form="step-form" class="conf-btn-next conf-btn-next--full">
-          Weiter
-        </button>
+        <button type="submit" form="step-form" class="conf-btn-next conf-btn-next--full">Weiter</button>
       </div>
     </div>
 
-    <%# ── Rechte Spalte: Upgrade Angebote ─────────────────────────────── %>
+    <%# ── Rechte Spalte: Upgrade-Angebote (dunkel) ───────────────────── %>
     <div>
       <h2 class="conf-question mb-4">Upgrade Angebote</h2>
-
       <div class="d-flex flex-column gap-3" data-card-select-target="grid">
-        <% if @upgrade_addons.empty? %>
+
+        <% all_upgrades = (@main_products + @addon_products).uniq %>
+        <% if all_upgrades.empty? %>
           <p class="text-muted small">Keine weiteren Upgrade-Angebote verfügbar.</p>
-        <% end %>
-
-        <% @upgrade_addons.each do |addon| %>
-          <%
-            is_selected = @selected_upgrade_ids.include?(addon.id)
-            ph   = addon_price_hash(addon)
-            name = addon.effective_attr("name")
-            desc = addon.effective_description("de") || ""
-            is_popular = addon.crm_attributes["popular"] == true
-          %>
-          <div class="conf-card conf-card--dark <%= 'is-selected' if is_selected %>"
-               data-card-select-target="card"
-               data-value="<%= addon.id %>"
-               data-input-name="upgrade_ids[]"
-               data-select-mode="checkbox">
-
-            <div class="conf-card__body">
-              <div class="conf-card__radio mb-2">
-                <div class="conf-card__checkbox-dot"></div>
-                <span class="conf-card__name"><%= name %></span>
-                <% if is_popular %>
-                  <span class="badge-popular ms-auto">Beliebt</span>
-                <% end %>
-              </div>
-
-              <p class="conf-card__description" style="font-size:0.82rem;">
-                <%= desc.gsub(/<[^>]+>/, "").truncate(120) %>
-              </p>
-
-              <div class="conf-card__price-row">
-                <span class="conf-card__price-label">Preis</span>
-                <div class="conf-card__price">
-                  <% if ph[:original] %>
-                    <span class="conf-card__price-original">
-                      <%= format_conf_price(ph[:original], config.currency) %>
-                    </span>
-                  <% end %>
-                  <span><%= format_conf_price(ph[:current], config.currency) %></span>
-                  <span class="conf-card__period">/ Monat</span>
-                  <% if ph[:discount_percent] %>
-                    <span class="badge-discount">-<%= ph[:discount_percent] %>%</span>
-                  <% end %>
-                </div>
-              </div>
-            </div>
-
-            <input type="checkbox" name="upgrade_ids[]" value="<%= addon.id %>"
-                   <%= "checked" if is_selected %> style="display:none;">
-          </div>
+        <% else %>
+          <%= render "configurator/shared/product_row",
+                     products: all_upgrades,
+                     selected_ids: @selected_upgrade_ids || [],
+                     input_name: "upgrade_ids[]",
+                     selection_mode: "checkbox",
+                     dark: true,
+                     config: config %>
         <% end %>
       </div>
     </div>
-
   </div>
 <% end %>

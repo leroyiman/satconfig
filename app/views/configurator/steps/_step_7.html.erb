@@ -15,11 +15,9 @@
       </div>
       <div class="text-muted small mb-3">pro Monat</div>
 
-      <div class="conf-summary-card__image"
-           style="background: linear-gradient(135deg,#c8bfb0,#a89880);
-                  display:flex; align-items:center; justify-content:center;
-                  color:#7a6f62; font-size:0.85rem;">
-        <%= config.location&.name %>
+      <div class="conf-summary-card__image" style="padding:0; overflow:hidden;">
+        <%= render "configurator/shared/location_image",
+                   location: config.location, height: "160px" %>
       </div>
 
       <%# Alle Zeilen %>

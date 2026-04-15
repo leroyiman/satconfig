@@ -1,0 +1,31 @@
+<%#
+  Zeigt das Bild einer Location.
+  Locals:
+    location – Location-Objekt
+    height   – CSS-Höhe, z.B. "150px" (default "130px")
+    css      – zusätzliche CSS-Klassen (optional)
+%>
+<% img_url = local_assigns[:location]&.effective_picture_id %>
+<% h = local_assigns[:height] || "130px" %>
+
+<% if img_url.present? && (img_url.start_with?("http://", "https://", "/")) %>
+  <img src="<%= img_url %>"
+       alt="<%= location&.effective_name %>"
+       style="width:100%; height:<%= h %>; object-fit:cover; display:block;"
+       loading="lazy"
+       onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+  <%# Fallback falls Bild nicht lädt %>
+  <div style="display:none; width:100%; height:<%= h %>;
+              background:linear-gradient(135deg,#c8bfb0,#a89880);
+              align-items:center; justify-content:center;
+              color:#7a6f62; font-size:0.8rem;">
+    <%= location&.effective_name %>
+  </div>
+<% else %>
+  <div style="width:100%; height:<%= h %>;
+              background:linear-gradient(135deg,#c8bfb0,#a89880);
+              display:flex; align-items:center; justify-content:center;
+              color:#7a6f62; font-size:0.8rem;">
+    <%= location&.effective_name %>
+  </div>
+<% end %>

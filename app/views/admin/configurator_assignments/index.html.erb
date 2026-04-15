@@ -3,203 +3,172 @@
 <% end %>
 
 <style>
-  .assign-card { transition: box-shadow 0.15s; }
-  .assign-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-  .step-section { border-left: 3px solid #e8ecf4; padding-left: 1rem; margin-bottom: 1.5rem; }
-  .step-section.has-items { border-left-color: #4f6ef7; }
+  .step-block { border: 1.5px solid #e8ecf4; border-radius: 0.625rem; margin-bottom: 1rem; overflow: hidden; }
+  .step-block__header { background: #f8f9fc; padding: 0.625rem 1rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e8ecf4; }
+  .step-block__body { padding: 0.75rem 1rem; }
+  .assign-item { display: flex; align-items: center; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid #f0f2f8; }
+  .assign-item:last-child { border-bottom: none; }
+  .row-badge-radio    { background: #e8f0fe; color: #3b5bdb; font-size: 0.62rem; font-weight: 700; padding: 0.15rem 0.45rem; border-radius: 0.25rem; }
+  .row-badge-checkbox { background: #2a2a28; color: #e0d9cc; font-size: 0.62rem; font-weight: 700; padding: 0.15rem 0.45rem; border-radius: 0.25rem; }
 </style>
 
-<div class="d-flex align-items-center justify-content-between mb-4">
+<div class="d-flex align-items-center justify-content-between mb-3">
   <div>
     <h4 class="fw-bold mb-0">Konfigurator-Zuweisungen</h4>
-    <p class="text-muted small mb-0">
-      Steuere welche Locations und Produkte in welchem Konfigurator und Step erscheinen.
-    </p>
+    <p class="text-muted small mb-0">Pro Location festlegen, welche Produkte in welchem Step erscheinen.</p>
   </div>
 </div>
 
-<%# ── Konfigurator-Tab-Auswahl ────────────────────────────────────────── %>
-<div class="d-flex gap-2 mb-4">
-  <% ConfiguratorAssignment::CONFIGURATOR_TYPES.each do |type| %>
-    <%= link_to admin_configurator_assignments_path(configurator_type: type),
-                class: "btn btn-sm #{ @configurator_type == type ? 'btn-dark' : 'btn-outline-secondary'}" do %>
-      <%= ConfiguratorAssignment::CONFIGURATOR_LABELS[type] %>
+<%# ── Location wählen ──────────────────────────────────────────────────── %>
+<div class="admin-card mb-4">
+  <div class="card-body py-2 px-3">
+    <%= form_with url: admin_configurator_assignments_path, method: :get, local: true,
+                  class: "d-flex align-items-center gap-3" do |f| %>
+      <%= f.hidden_field :configurator_type, value: @configurator_type %>
+      <label class="small fw-medium mb-0">Location:</label>
+      <%= f.select :location_id,
+            options_for_select(
+              @locations.map { |l| ["#{l.city.name} – #{l.effective_name}", l.id] },
+              @location&.id
+            ),
+            { prompt: "Location wählen…" },
+            class: "form-select form-select-sm", style: "width:280px",
+            onchange: "this.form.submit()" %>
+
+      <% ConfiguratorAssignment::CONFIGURATOR_TYPES.each do |type| %>
+        <%= link_to ConfiguratorAssignment::CONFIGURATOR_LABELS[type],
+                    admin_configurator_assignments_path(location_id: @location&.id, configurator_type: type),
+                    class: "btn btn-sm #{ @configurator_type == type ? 'btn-dark' : 'btn-outline-secondary'}" %>
+      <% end %>
     <% end %>
-  <% end %>
+  </div>
 </div>
+
+<% unless @location %>
+  <div class="text-center text-muted py-5">
+    <i class="fa-solid fa-hand-pointer mb-2 d-block fs-2"></i>
+    Bitte eine Location auswählen.
+  </div>
+<% else %>
 
 <div class="row g-4">
 
-  <%# ── Linke Spalte: Aktuelle Zuweisungen ─────────────────────────────── %>
+  <%# ── Linke Spalte: Aktuelle Zuweisungen ─────────────────────────── %>
   <div class="col-lg-7">
+    <h6 class="fw-bold mb-3 text-muted text-uppercase" style="font-size:0.72rem; letter-spacing:0.1em;">
+      Zuweisungen für <%= @location.effective_name %>
+    </h6>
 
-    <%# Step 1: Locations %>
-    <div class="step-section <%= @location_assignments.any? ? 'has-items' : '' %> mb-4">
-      <div class="d-flex align-items-center justify-content-between mb-2">
-        <h6 class="fw-bold mb-0">
-          <span class="badge bg-primary me-2">1</span>Adresse – Locations
-        </h6>
-        <span class="badge bg-secondary"><%= @location_assignments.count %> zugewiesen</span>
-      </div>
-
-      <% if @location_assignments.empty? %>
-        <p class="text-muted small mb-2">
-          <i class="fa-solid fa-info-circle me-1"></i>
-          Keine Locations zugewiesen – es werden alle aktiven Locations angezeigt.
-        </p>
-      <% else %>
-        <% @location_assignments.each do |assignment| %>
-          <div class="admin-card assign-card mb-2 p-2 d-flex align-items-center justify-content-between">
-            <div class="d-flex align-items-center gap-2">
-              <i class="fa-solid fa-map-pin text-primary"></i>
-              <div>
-                <div class="small fw-medium"><%= assignment.assignable&.effective_name || "—" %></div>
-                <div class="text-muted" style="font-size:0.72rem">
-                  <%= assignment.assignable&.city&.name %>
-                  &nbsp;·&nbsp; Position <%= assignment.position %>
-                </div>
-              </div>
-            </div>
-            <%= button_to admin_configurator_assignment_path(assignment),
-                          method: :delete,
-                          class: "btn btn-sm btn-outline-danger",
-                          form: { "data-turbo-confirm": "Zuweisung entfernen?" } do %>
-              <i class="fa-solid fa-xmark"></i>
-            <% end %>
+    <% ConfiguratorAssignment::STEP_LABELS.each do |step_num, step_label| %>
+      <% items = @assignments_by_step[step_num] || [] %>
+      <div class="step-block">
+        <div class="step-block__header">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-dark">Step <%= step_num %></span>
+            <span class="small fw-semibold"><%= step_label %></span>
           </div>
-        <% end %>
-      <% end %>
-    </div>
-
-    <%# Steps 2–6: Produkte ────────────────────────────────────────────── %>
-    <% step_config = {
-         2 => { label: "Typ – Hauptprodukt",         color: "success",   types: %w[VirtualOffice CompanyHeadquarter Office ConferenceRoom] },
-         3 => { label: "Erreichbarkeit – Addons",    color: "info",      types: %w[Addon] },
-         4 => { label: "Meetings – Addons",           color: "warning",   types: %w[Addon] },
-         5 => { label: "Membership – Addons",         color: "secondary", types: %w[Addon] },
-         6 => { label: "Upgrade-Angebote – Addons",   color: "dark",      types: %w[Addon] }
-       } %>
-
-    <% step_config.each do |step_num, cfg| %>
-      <% step_items = @product_assignments[step_num] || [] %>
-      <div class="step-section <%= step_items.any? ? 'has-items' : '' %> mb-4">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <h6 class="fw-bold mb-0">
-            <span class="badge bg-<%= cfg[:color] %> me-2"><%= step_num %></span>
-            <%= cfg[:label] %>
-          </h6>
-          <span class="badge bg-secondary"><%= step_items.count %> zugewiesen</span>
+          <span class="badge bg-light text-muted small"><%= items.count %></span>
         </div>
 
-        <% if step_items.empty? %>
-          <p class="text-muted small mb-2">
-            <i class="fa-solid fa-info-circle me-1"></i>
-            Keine Produkte zugewiesen – es werden alle passenden Produkte angezeigt.
-          </p>
-        <% else %>
-          <% step_items.each do |assignment| %>
-            <% product = assignment.assignable %>
-            <div class="admin-card assign-card mb-2 p-2 d-flex align-items-center justify-content-between">
-              <div class="d-flex align-items-center gap-2">
-                <span class="badge bg-<%= product_type_color(product&.type) %>" style="font-size:0.6rem;">
-                  <%= product_type_label(product&.type) %>
-                </span>
-                <div>
-                  <div class="small fw-medium">
-                    <%= product&.effective_attr("name") || "—" %>
-                  </div>
-                  <div class="text-muted" style="font-size:0.72rem;">
-                    <%= product&.location&.name %> &nbsp;·&nbsp; Pos. <%= assignment.position %>
-                  </div>
-                </div>
+        <div class="step-block__body">
+          <% if items.empty? %>
+            <p class="text-muted small mb-0">
+              Keine Zuweisung → werden alle passenden Produkte der Location angezeigt.
+            </p>
+          <% else %>
+            <%# Zeile 1: radio %>
+            <% radio_items = items.select { |a| a.selection_type == "radio" } %>
+            <% if radio_items.any? %>
+              <div class="small text-muted fw-semibold mb-1">
+                <span class="row-badge-radio">Zeile 1 – Hauptauswahl (Radio)</span>
               </div>
-              <%= button_to admin_configurator_assignment_path(assignment),
-                            method: :delete,
-                            class: "btn btn-sm btn-outline-danger",
-                            form: { "data-turbo-confirm": "Zuweisung entfernen?" } do %>
-                <i class="fa-solid fa-xmark"></i>
+              <% radio_items.each do |a| %>
+                <div class="assign-item">
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-<%= product_type_color(a.product&.type) %>" style="font-size:0.6rem">
+                      <%= product_type_label(a.product&.type) %>
+                    </span>
+                    <span class="small"><%= a.product&.effective_attr("name") || "–" %></span>
+                    <span class="text-muted" style="font-size:0.72rem">Pos. <%= a.position %></span>
+                  </div>
+                  <%= button_to admin_configurator_assignment_path(a),
+                                method: :delete,
+                                class: "btn btn-xs btn-outline-danger py-0 px-1",
+                                style: "font-size:0.7rem",
+                                form: { "data-turbo-confirm": "Entfernen?" } do %>
+                    <i class="fa-solid fa-xmark"></i>
+                  <% end %>
+                </div>
               <% end %>
-            </div>
+            <% end %>
+
+            <%# Zeile 2: checkbox %>
+            <% checkbox_items = items.select { |a| a.selection_type == "checkbox" } %>
+            <% if checkbox_items.any? %>
+              <div class="small text-muted fw-semibold mb-1 mt-2">
+                <span class="row-badge-checkbox">Zeile 2 – Addons (Checkbox)</span>
+              </div>
+              <% checkbox_items.each do |a| %>
+                <div class="assign-item">
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-<%= product_type_color(a.product&.type) %>" style="font-size:0.6rem">
+                      <%= product_type_label(a.product&.type) %>
+                    </span>
+                    <span class="small"><%= a.product&.effective_attr("name") || "–" %></span>
+                    <span class="text-muted" style="font-size:0.72rem">Pos. <%= a.position %></span>
+                  </div>
+                  <%= button_to admin_configurator_assignment_path(a),
+                                method: :delete,
+                                class: "btn btn-xs btn-outline-danger py-0 px-1",
+                                style: "font-size:0.7rem",
+                                form: { "data-turbo-confirm": "Entfernen?" } do %>
+                    <i class="fa-solid fa-xmark"></i>
+                  <% end %>
+                </div>
+              <% end %>
+            <% end %>
           <% end %>
-        <% end %>
+        </div>
       </div>
     <% end %>
-
   </div>
 
-  <%# ── Rechte Spalte: Hinzufügen ───────────────────────────────────────── %>
+  <%# ── Rechte Spalte: Produkt hinzufügen ──────────────────────────── %>
   <div class="col-lg-5">
-
-    <%# Location hinzufügen %>
-    <div class="admin-card mb-4">
-      <div class="card-header d-flex align-items-center gap-2">
-        <i class="fa-solid fa-map-pin text-primary"></i>
-        Location zu Step 1 hinzufügen
+    <div class="admin-card" style="position:sticky; top:1.5rem;">
+      <div class="card-header fw-semibold small">
+        <i class="fa-solid fa-plus me-1"></i>
+        Produkt zuweisen – <%= @location.effective_name %>
       </div>
       <div class="card-body">
-        <% if @available_locations.empty? %>
-          <p class="text-muted small mb-0">Alle Locations sind bereits zugewiesen.</p>
-        <% else %>
-          <%= form_with url: admin_configurator_assignments_path, method: :post, local: true do |f| %>
-            <%= f.hidden_field :configurator_type, value: @configurator_type %>
-            <%= f.hidden_field :assignable_type, value: "Location" %>
-            <%= f.hidden_field :step, value: 1 %>
 
-            <div class="mb-2">
-              <label class="form-label small fw-medium">Location</label>
-              <%= f.select :assignable_id,
-                    options_for_select(@available_locations.map { |l| ["#{l.city.name} – #{l.effective_name}", l.id] }),
-                    { prompt: "Wählen…" },
-                    class: "form-select form-select-sm" %>
-            </div>
-            <div class="mb-3">
-              <label class="form-label small fw-medium">Position (Reihenfolge)</label>
-              <%= f.number_field :position, value: (@location_assignments.count + 1),
-                                 min: 0, class: "form-control form-control-sm", style: "width:80px" %>
-            </div>
-            <%= f.submit "Hinzufügen", class: "btn btn-primary btn-sm" %>
-          <% end %>
-        <% end %>
-      </div>
-    </div>
-
-    <%# Produkt hinzufügen %>
-    <div class="admin-card">
-      <div class="card-header d-flex align-items-center gap-2">
-        <i class="fa-solid fa-layer-group text-muted"></i>
-        Produkt zu einem Step hinzufügen
-      </div>
-      <div class="card-body">
         <%= form_with url: admin_configurator_assignments_path, method: :post, local: true do |f| %>
+          <%= f.hidden_field :location_id,       value: @location.id %>
           <%= f.hidden_field :configurator_type, value: @configurator_type %>
-          <%= f.hidden_field :assignable_type, value: "Product" %>
 
-          <div class="mb-2">
+          <div class="mb-3">
             <label class="form-label small fw-medium">Step</label>
             <%= f.select :step,
-                  options_for_select([
-                    ["Step 2 – Typ (VO / Company HQ)", 2],
-                    ["Step 3 – Erreichbarkeit (Addon)", 3],
-                    ["Step 4 – Meetings (Addon)", 4],
-                    ["Step 5 – Membership (Addon)", 5],
-                    ["Step 6 – Upgrade-Angebote (Addon)", 6]
-                  ]),
+                  options_for_select(ConfiguratorAssignment::STEP_LABELS.map { |k,v| ["Step #{k} – #{v}", k] }),
                   { prompt: "Step wählen…" },
                   class: "form-select form-select-sm" %>
           </div>
 
-          <div class="mb-2">
-            <label class="form-label small fw-medium">Produkt</label>
+          <div class="mb-3">
+            <label class="form-label small fw-medium d-flex align-items-center justify-content-between">
+              Produkt
+              <span class="text-muted fw-normal" style="font-size:0.72rem;">
+                Nur Produkte dieser Location
+              </span>
+            </label>
             <% if @available_products.empty? %>
-              <p class="text-muted small">Alle Produkte sind bereits zugewiesen.</p>
+              <p class="text-muted small">Alle Produkte dieser Location sind bereits zugewiesen.</p>
             <% else %>
-              <%= f.select :assignable_id,
+              <%= f.select :product_id,
                     grouped_options_for_select(
-                      @available_products.map { |type, products|
+                      @available_products.map { |type, prods|
                         [product_type_label(type),
-                         products.map { |p|
-                           ["#{p.effective_attr('name') || '–'} (#{p.location&.name})", p.id]
-                         }]
+                         prods.map { |p| ["#{p.effective_attr('name') || '–'}", p.id] }]
                       }
                     ),
                     { prompt: "Produkt wählen…" },
@@ -208,15 +177,37 @@
           </div>
 
           <div class="mb-3">
+            <label class="form-label small fw-medium">Darstellung</label>
+            <div class="d-flex gap-2">
+              <div class="form-check">
+                <%= f.radio_button :selection_type, "radio", checked: true,
+                                   class: "form-check-input", id: "sel_radio" %>
+                <label class="form-check-label small" for="sel_radio">
+                  <span class="row-badge-radio">Zeile 1</span> Radio / Hauptauswahl
+                </label>
+              </div>
+              <div class="form-check">
+                <%= f.radio_button :selection_type, "checkbox",
+                                   class: "form-check-input", id: "sel_checkbox" %>
+                <label class="form-check-label small" for="sel_checkbox">
+                  <span class="row-badge-checkbox">Zeile 2</span> Addon / Checkbox
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3">
             <label class="form-label small fw-medium">Position</label>
             <%= f.number_field :position, value: 0, min: 0,
                                class: "form-control form-control-sm", style: "width:80px" %>
           </div>
 
-          <%= f.submit "Hinzufügen", class: "btn btn-primary btn-sm" %>
+          <%= f.submit "Zuweisen", class: "btn btn-primary btn-sm px-4" %>
         <% end %>
+
       </div>
     </div>
-
   </div>
+
 </div>
+<% end %>

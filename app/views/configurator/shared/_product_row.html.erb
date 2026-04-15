@@ -1,0 +1,75 @@
+<%#
+  Universelles Partial für eine Produkt-Zeile im Konfigurator.
+  Locals:
+    products       – Array von Product-Objekten
+    selected_ids   – Array von bereits gewählten IDs
+    input_name     – z.B. "addon_ids[]" oder "product_id"
+    selection_mode – "radio" (single) oder "checkbox" (multi)
+    dark           – true für dunkle Upgrade-Karten
+    config         – die aktuelle Configuration
+%>
+
+<% products.each do |product| %>
+  <%
+    is_selected = selected_ids.include?(product.id)
+    ph          = product_price_hash(product)
+    currency    = config.currency
+    name        = product.effective_name(config.location&.language) ||
+                  product.effective_attr("name") ||
+                  product.type
+    desc        = product.effective_description(config.location&.language) || ""
+    features    = desc.present? ? Nokogiri::HTML(desc).css("li").map(&:text) : []
+    is_popular  = product.crm_attributes["popular"] == true || product.crm_attributes["recommended"] == true
+    popular_label = product.crm_attributes["recommended"] == true ? "Empfehlung" : "Beliebt"
+  %>
+  <div class="conf-card <%= 'conf-card--dark' if dark %> <%= 'is-selected' if is_selected %>"
+       data-card-select-target="card"
+       data-value="<%= product.id %>"
+       data-input-name="<%= input_name %>"
+       data-select-mode="<%= selection_mode %>">
+
+    <div class="conf-card__body">
+      <div class="conf-card__radio mb-2">
+        <% if selection_mode == "checkbox" %>
+          <div class="conf-card__checkbox-dot"></div>
+        <% else %>
+          <div class="conf-card__radio-dot"></div>
+        <% end %>
+        <span class="<%= dark ? 'conf-card__name' : '' %>"><%= name %></span>
+        <% if is_popular %>
+          <span class="badge-popular ms-auto"><%= popular_label %></span>
+        <% end %>
+      </div>
+
+      <% if features.any? %>
+        <ul class="conf-card__features">
+          <% features.first(6).each do |feat| %><li><%= feat %></li><% end %>
+        </ul>
+      <% elsif desc.present? && features.empty? %>
+        <p class="conf-card__description"><%= desc.gsub(/<[^>]+>/, "").truncate(120) %></p>
+      <% end %>
+
+      <div class="conf-card__price-row">
+        <span class="conf-card__price-label">Preis</span>
+        <div class="conf-card__price">
+          <% if ph[:original] %>
+            <span class="conf-card__price-original">
+              <%= format_conf_price(ph[:original], currency) %>
+            </span>
+          <% end %>
+          <span><%= format_conf_price(ph[:current], currency) %></span>
+          <span class="conf-card__period">/ Monat</span>
+          <% if ph[:discount_percent] %>
+            <span class="badge-discount">-<%= ph[:discount_percent] %>%</span>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <input type="<%= selection_mode == 'checkbox' ? 'checkbox' : 'radio' %>"
+           name="<%= input_name %>"
+           value="<%= product.id %>"
+           <%= "checked" if is_selected %>
+           style="display:none;">
+  </div>
+<% end %>
