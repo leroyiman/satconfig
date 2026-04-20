@@ -39,26 +39,67 @@ module Zoho
     # ── Upsert ────────────────────────────────────────────────────────────────
 
     def upsert_product
+      if @entity_type == "addon"
+        upsert_addon
+      else
+        upsert_single_product
+      end
+    end
+
+    def upsert_single_product
       return Result.fail("location_zoho_id fehlt") if @data["location_zoho_id"].blank?
 
       location = Location.find_by(zoho_location_id: @data["location_zoho_id"])
       return Result.fail("Location nicht gefunden: #{@data["location_zoho_id"]}") unless location
 
+      upsert_product_record(location, build_crm_attributes)
+    end
+
+    def upsert_addon
+      prices = Array(@data["prices"])
+      return Result.fail("prices Array fehlt oder leer") if prices.empty?
+
+      results = prices.map do |price_entry|
+        location_zoho_id = price_entry["location_zoho_id"]
+        location = Location.find_by(zoho_location_id: location_zoho_id)
+
+        unless location
+          Rails.logger.warn("[ZohoWebhook] Addon Location nicht gefunden: #{location_zoho_id}")
+          next Result.fail("Location nicht gefunden: #{location_zoho_id}")
+        end
+
+        crm_attrs = build_crm_attributes.merge(
+          "price_per_location" => price_entry["price"]
+        )
+
+        upsert_product_record(location, crm_attrs)
+      end
+
+      errors = results.select(&:failure?)
+      errors.each { |r| Rails.logger.error("[ZohoWebhook] Addon Sync Fehler: #{r.error}") }
+
+      Result.ok
+    end
+
+    def upsert_product_record(location, crm_attrs)
       product_class_name = ENTITY_TYPE_TO_CLASS[@entity_type]
       return Result.fail("Unbekannter entity_type: #{@entity_type}") unless product_class_name
 
       product_class = product_class_name.constantize
-      product = product_class.find_or_initialize_by(zoho_product_id: @zoho_id)
-      product.location = location
-      product.active   = true
 
-      # Typ-spezifische CRM-Attribute aufbauen
-      product.crm_attributes  = build_crm_attributes
-      product.synced_data     = @raw_payload
-      product.last_synced_at  = Time.current
+      product = if @entity_type == "addon"
+        product_class.find_or_initialize_by(zoho_product_id: @zoho_id, location: location)
+      else
+        product_class.find_or_initialize_by(zoho_product_id: @zoho_id)
+      end
+
+      product.location       = location
+      product.active         = true
+      product.crm_attributes = crm_attrs
+      product.synced_data    = @raw_payload
+      product.last_synced_at = Time.current
       product.save!
 
-      # Übersetzungen synchronisieren (nur crm_*-Felder, local_* bleiben erhalten)
       sync_translations(product)
 
       Rails.logger.info("[ZohoWebhook] #{product_class_name} #{@event.split('.').last}: #{product.effective_attr('name')} (#{@zoho_id})")
@@ -110,11 +151,11 @@ module Zoho
         )
       when "addon"
         base.merge(
-          "billing_type"       => @data["billing_type"],
-          "category"           => @data["category"],
-          "unit"               => @data["unit"],
-          "applies_to"         => Array(@data["applies_to"]),
-          "price_per_location" => @data["price_per_location"]
+          "billing_type" => @data["billing_type"],
+          "category"     => @data["category"],
+          "unit"         => @data["unit"],
+          "applies_to"   => Array(@data["applies_to"])
+          # price_per_location wird pro Location in upsert_addon gesetzt
         )
       else
         base
