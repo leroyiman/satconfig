@@ -1,0 +1,133 @@
+<%#
+  Per-Location Preis-Overrides für Addons.
+  Zeigt ALLE Locations, die in synced_data["data"]["prices"] liegen.
+  Input-Namen: product[prices_by_location][<zoho_location_id>]
+%>
+<% rows = product.location_price_rows %>
+
+<% if rows.empty? %>
+  <div class="card-body text-muted small text-center py-3">
+    Keine Location-Preise in den CRM-Daten gefunden.
+    <div class="mt-2">
+      Zuletzt synchronisiert:
+      <%= product.last_synced_at&.strftime("%d.%m.%Y %H:%M") || "nie" %>
+    </div>
+  </div>
+<% else %>
+
+  <%# Zusammenfassung %>
+  <div class="px-3 pt-3 pb-1 d-flex align-items-center gap-2 flex-wrap">
+    <span class="badge bg-light text-muted" style="font-size:0.7rem">
+      <i class="fa-solid fa-map-pin me-1"></i>
+      <%= rows.size %> Location<%= "s" if rows.size != 1 %>
+    </span>
+    <% override_count = rows.count { |r| r[:overridden?] } %>
+    <% if override_count > 0 %>
+      <span class="badge bg-warning text-dark" style="font-size:0.7rem">
+        <i class="fa-solid fa-pen-to-square me-1"></i>
+        <%= override_count %> Override<%= "s" if override_count != 1 %>
+      </span>
+    <% end %>
+    <% unassigned = rows.count { |r| r[:location].nil? } %>
+    <% if unassigned > 0 %>
+      <span class="badge bg-danger" style="font-size:0.7rem" title="Location nicht in DB gefunden">
+        <i class="fa-solid fa-triangle-exclamation me-1"></i>
+        <%= unassigned %> unbekannte Location<%= "s" if unassigned != 1 %>
+      </span>
+    <% end %>
+  </div>
+
+  <%# Tabellen-Header %>
+  <div class="px-3 pt-2 pb-1">
+    <div class="row gx-2 text-muted small fw-semibold border-bottom pb-1">
+      <div class="col-4">Location</div>
+      <div class="col-2">CRM-Preis</div>
+      <div class="col-3">Dein Override</div>
+      <div class="col-1">Status</div>
+      <div class="col-2">Aktion</div>
+    </div>
+  </div>
+
+  <%= form_with url: admin_product_path(product), method: :patch, local: true do |f| %>
+    <div class="px-3 pb-1">
+      <% rows.each do |row| %>
+        <% zid       = row[:location_zoho_id] %>
+        <% loc       = row[:location] %>
+        <% crm_price = row[:crm_price] %>
+        <% local_val = row[:local_price] %>
+        <div class="row gx-2 align-items-center py-2 border-bottom override-row">
+          <%# Location %>
+          <div class="col-4 small">
+            <% if loc %>
+              <div class="fw-medium"><%= loc.effective_name %></div>
+              <div class="text-muted" style="font-size:0.75rem">
+                <i class="fa-solid fa-city me-1"></i><%= loc.city.name %>
+              </div>
+            <% else %>
+              <div class="fw-medium text-danger">
+                <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                Unbekannte Location
+              </div>
+              <div class="text-muted" style="font-size:0.7rem">
+                Zoho-ID: <code><%= zid %></code>
+              </div>
+            <% end %>
+          </div>
+
+          <%# CRM-Preis %>
+          <div class="col-2 crm-value small">
+            <% if crm_price %>
+              <%= format('%.2f', crm_price) %> €
+            <% else %>
+              <span class="text-muted">—</span>
+            <% end %>
+          </div>
+
+          <%# Override-Input %>
+          <div class="col-3">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text">€</span>
+              <%= number_field_tag "product[prices_by_location][#{zid}]",
+                                   local_val ? format('%.2f', local_val) : nil,
+                                   step: "0.01",
+                                   min: 0,
+                                   placeholder: crm_price ? format('%.2f', crm_price) : "leer = CRM",
+                                   class: "form-control #{'border-warning' if local_val.present?}" %>
+            </div>
+          </div>
+
+          <%# Status-Badge %>
+          <div class="col-1">
+            <% if local_val.present? %>
+              <span class="badge bg-warning text-dark" style="font-size:0.65rem">Override</span>
+            <% else %>
+              <span class="badge bg-light text-muted" style="font-size:0.65rem">CRM</span>
+            <% end %>
+          </div>
+
+          <%# Reset %>
+          <div class="col-2">
+            <% if local_val.present? %>
+              <%= button_to reset_override_admin_product_path(product, location_zoho_id: zid),
+                            method: :patch,
+                            class: "btn btn-sm btn-outline-secondary w-100",
+                            title: "Auf CRM-Wert zurücksetzen",
+                            form: { style: "display:inline" } do %>
+                <i class="fa-solid fa-rotate-left me-1"></i>Reset
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="px-3 pb-3 pt-2 border-top mt-1">
+      <%= f.submit "Overrides speichern",
+                   class: "btn btn-primary btn-sm px-4" %>
+      <span class="text-muted small ms-2">
+        Leer lassen = CRM-Wert gilt. Zoho-Sync überschreibt diese Werte <strong>nicht</strong>.
+      </span>
+    </div>
+  <% end %>
+
+<% end %>

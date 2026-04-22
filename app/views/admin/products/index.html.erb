@@ -95,25 +95,62 @@
                   <%= product_type_label(product.type) %>
                 </span>
               </td>
-              <td class="text-muted small"><%= product.location.name %></td>
-              <td class="text-muted small"><%= product.city.name %></td>
+              <td class="text-muted small">
+                <% if product.is_a?(Addon) %>
+                  <% loc_count = product.crm_price_entries.size %>
+                  <% if loc_count > 1 %>
+                    <i class="fa-solid fa-map-pin me-1"></i>
+                    <%= loc_count %> Locations
+                  <% else %>
+                    <%= product.location.name %>
+                  <% end %>
+                <% else %>
+                  <%= product.location.name %>
+                <% end %>
+              </td>
+              <td class="text-muted small">
+                <% if product.is_a?(Addon) && product.crm_price_entries.size > 1 %>
+                  <span class="text-muted">—</span>
+                <% else %>
+                  <%= product.city.name %>
+                <% end %>
+              </td>
               <td class="crm-value">
-                <% main_price_key = case product.type
-                                    when "ConferenceRoom" then "price_extern"
-                                    when "Addon"          then "price_per_location"
-                                    else "price_3"
-                                    end %>
-                <% crm_val = product.crm_attributes[main_price_key] %>
-                <%= crm_val.present? ? "#{product.currency} #{crm_val}" : "—" %>
+                <% if product.is_a?(Addon) %>
+                  <% prices = product.crm_price_entries.map { |e| e["price"].to_d }.compact %>
+                  <% if prices.empty? %>
+                    —
+                  <% elsif prices.min == prices.max %>
+                    <%= product.currency %> <%= format('%.2f', prices.min) %>
+                  <% else %>
+                    <%= product.currency %> <%= format('%.2f', prices.min) %> – <%= format('%.2f', prices.max) %>
+                  <% end %>
+                <% else %>
+                  <% main_price_key = product.type == "ConferenceRoom" ? "price_extern" : "price_3" %>
+                  <% crm_val = product.crm_attributes[main_price_key] %>
+                  <%= crm_val.present? ? "#{product.currency} #{crm_val}" : "—" %>
+                <% end %>
               </td>
               <td>
-                <% local_val = product.local_attributes[main_price_key] %>
-                <% if local_val.present? %>
-                  <span class="override-value">
-                    <%= product.currency %> <%= local_val %>
-                  </span>
+                <% if product.is_a?(Addon) %>
+                  <% override_count = product.local_prices_by_location.size %>
+                  <% if override_count > 0 %>
+                    <span class="override-value">
+                      <%= override_count %> Override<%= "s" if override_count != 1 %>
+                    </span>
+                  <% else %>
+                    <span class="text-muted small">–</span>
+                  <% end %>
                 <% else %>
-                  <span class="text-muted small">–</span>
+                  <% main_price_key = product.type == "ConferenceRoom" ? "price_extern" : "price_3" %>
+                  <% local_val = product.local_attributes[main_price_key] %>
+                  <% if local_val.present? %>
+                    <span class="override-value">
+                      <%= product.currency %> <%= local_val %>
+                    </span>
+                  <% else %>
+                    <span class="text-muted small">–</span>
+                  <% end %>
                 <% end %>
               </td>
               <td class="pe-3 text-muted small">

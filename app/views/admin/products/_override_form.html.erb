@@ -3,6 +3,11 @@
     <div class="d-flex align-items-center gap-2">
       <i class="fa-solid fa-euro-sign text-muted"></i>
       Preis-Overrides
+      <% if product.is_a?(Addon) %>
+        <span class="badge bg-light text-muted ms-1" style="font-size:0.65rem">
+          pro Location
+        </span>
+      <% end %>
     </div>
     <% if product.local_attributes.present? %>
       <%= button_to reset_override_admin_product_path(product),
@@ -19,10 +24,12 @@
        style="background:#f0f4ff; border:1px solid #d0dbff; color:#3a4a8a">
     <i class="fa-solid fa-circle-info me-1"></i>
     <strong>CRM-Wert</strong> kommt von Zoho und wird bei jedem Sync aktualisiert.
-    <strong>Dein Override</strong> bleibt bestehen – feld leer lassen = CRM-Wert gilt.
+    <strong>Dein Override</strong> bleibt bestehen – Feld leer lassen = CRM-Wert gilt.
   </div>
 
-  <% if overridable.empty? %>
+  <% if product.is_a?(Addon) %>
+    <%= render "admin/products/addon_price_overrides", product: product %>
+  <% elsif overridable.empty? %>
     <div class="card-body text-muted small text-center py-3">
       Keine überschreibbaren Preisfelder für diesen Produkttyp.
     </div>
