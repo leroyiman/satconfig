@@ -7,7 +7,7 @@ class Location < ApplicationRecord
   has_many :virtual_offices,       -> { where(type: "VirtualOffice") },       class_name: "Product"
   has_many :company_headquarters,  -> { where(type: "CompanyHeadquarter") },  class_name: "Product"
   has_many :addons,                -> { where(type: "Addon") },               class_name: "Product"
-  has_many :configurator_assignments, as: :assignable, dependent: :destroy
+  has_many :configurator_assignments, dependent: :destroy
 
   # ── Validations ───────────────────────────────────────────────────────────
   validates :name,             presence: true

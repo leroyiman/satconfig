@@ -2,7 +2,8 @@ class City < ApplicationRecord
   # ── Associations ──────────────────────────────────────────────────────────
   has_many :locations, dependent: :destroy
   has_many :products, through: :locations
-  has_many :configurator_assignments, as: :assignable, dependent: :destroy
+  # configurator_assignments sind pro Location, nicht pro City.
+  # Cascading Delete läuft automatisch über locations → configurator_assignments.
 
   # ── Validations ───────────────────────────────────────────────────────────
   validates :name,         presence: true

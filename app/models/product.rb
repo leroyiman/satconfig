@@ -6,7 +6,8 @@ class Product < ApplicationRecord
 
   # ── Associations ──────────────────────────────────────────────────────────
   belongs_to :location
-  has_many   :product_translations, dependent: :destroy
+  has_many   :product_translations,    dependent: :destroy
+  has_many   :configurator_assignments, dependent: :destroy
 
   # ── Validations ───────────────────────────────────────────────────────────
   validates :type,            presence: true, inclusion: { in: TYPES }
