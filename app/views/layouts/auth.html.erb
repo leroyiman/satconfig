@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin Login – Satellite Office</title>
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <%= stylesheet_link_tag "application", media: "all" %>
+    <%= javascript_importmap_tags %>
+  </head>
+  <body class="conf-page">
+
+    <%# ── Hero Header (identisch zur Root-Seite) ─────────────────────────── %>
+    <header class="conf-hero conf-hero--tall">
+      <div class="conf-hero__bg" style="background-image: url('https://www.satelliteoffice.de/wp-content/uploads/2025/03/FOP-14.webp');"></div>
+      <div class="conf-hero__content">
+
+        <%# Topbar %>
+        <div class="conf-topbar">
+          <a href="/" class="conf-topbar__logo">
+            <strong>SATELLITE</strong> OFFICE
+          </a>
+          <p class="conf-topbar__title">Admin-Bereich</p>
+          <a href="mailto:info@satelliteoffice.de" class="conf-topbar__contact">Kontakt</a>
+        </div>
+
+      </div>
+    </header>
+
+    <%# Flash Messages %>
+    <% if flash[:alert].present? || flash[:notice].present? %>
+      <div class="auth-flash-wrap">
+        <% if flash[:alert].present? %>
+          <div class="alert alert-danger alert-dismissible" role="alert">
+            <%= flash[:alert] %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        <% end %>
+        <% if flash[:notice].present? %>
+          <div class="alert alert-success alert-dismissible" role="alert">
+            <%= flash[:notice] %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
+    <%# Main Content %>
+    <%= yield %>
+
+  </body>
+</html>
