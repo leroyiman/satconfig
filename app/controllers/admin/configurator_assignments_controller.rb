@@ -16,23 +16,55 @@ class Admin::ConfiguratorAssignmentsController < Admin::BaseController
 
     @assignments_by_step = all.group_by(&:step)
 
-    # Alle Produkte dieser Location die noch nicht zugewiesen sind
+    # Alle Produkte die für die Auswahl in Frage kommen.
+    #
+    # Wichtig: Addons werden NICHT über @location.products gefiltert!
+    # Zoho liefert pro Addon einen einzigen Datensatz mit n Preisen
+    # (eine pro Location). Das belongs_to :location auf einem Addon
+    # zeigt daher nur auf eine arbiträre "Erst-Location" und ist als
+    # Verfügbarkeits-Indikator unbrauchbar. Die Wahrheit steckt im
+    # synced_data["data"]["prices"]-Array.
     assigned_product_ids = all.map(&:product_id)
-    @available_products  = @location.products
-                                    .active
-                                    .where.not(id: assigned_product_ids)
-                                    .order(:type, Arel.sql("crm_attributes->>'name'"))
-                                    .group_by(&:type)
+
+    # 1) Echte Location-Produkte (Office, ConferenceRoom, ...) — bleiben
+    #    standortgebunden über belongs_to :location.
+    location_scoped = @location.products
+                               .active
+                               .where.not(type: "Addon")
+                               .where.not(id: assigned_product_ids)
+                               .order(:type, Arel.sql("crm_attributes->>'name'"))
+                               .to_a
+
+    # 2) Addons — alle aktiven Addons, die einen Preis (CRM oder lokal)
+    #    für diese Location haben.
+    addons_for_location = Addon.active
+                               .where.not(id: assigned_product_ids)
+                               .select { |a| a.available_for_location?(@location) }
+                               .sort_by { |a| a.effective_attr("name").to_s.downcase }
+
+    @available_products = (location_scoped + addons_for_location).group_by(&:type)
   end
 
   def create
     location = Location.find(params[:location_id])
     product  = Product.find(params[:product_id])
+    conf_type = params[:configurator_type] || "geschaeftsadresse"
+
+    # Defense-in-Depth: Addons dürfen einer Location nur dann zugewiesen
+    # werden, wenn sie für diese Location auch einen Preis besitzen.
+    # Die UI filtert das ohnehin – aber der Endpunkt muss robust sein.
+    if product.is_a?(Addon) && !product.available_for_location?(location)
+      redirect_to admin_configurator_assignments_path(
+                    location_id: location.id,
+                    configurator_type: conf_type
+                  ), alert: "Dieses Addon hat keinen Preis für #{location.effective_name} und kann daher nicht zugewiesen werden."
+      return
+    end
 
     assignment = ConfiguratorAssignment.new(
       location:          location,
       product:           product,
-      configurator_type: params[:configurator_type] || "geschaeftsadresse",
+      configurator_type: conf_type,
       step:              params[:step].to_i,
       selection_type:    params[:selection_type] || "radio",
       position:          params[:position].to_i
@@ -46,7 +78,7 @@ class Admin::ConfiguratorAssignmentsController < Admin::BaseController
     else
       redirect_to admin_configurator_assignments_path(
                     location_id: location.id,
-                    configurator_type: params[:configurator_type]
+                    configurator_type: conf_type
                   ), alert: assignment.errors.full_messages.join(", ")
     end
   end

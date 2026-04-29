@@ -86,6 +86,22 @@ class Addon < Product
     local_prices_by_location.key?(zoho_location_id.to_s)
   end
 
+  # Prüft, ob dieser Addon für eine Location verfügbar ist.
+  # Quelle der Wahrheit ist Zoho's prices-Array (synced_data["data"]["prices"]),
+  # ergänzt um lokale Preis-Overrides. Die location_id-Spalte des Addon-Records
+  # wird bewusst NICHT herangezogen, weil Zoho pro Addon nur EINEN Datensatz
+  # liefert (mit n Preisen für n Locations) — der location_id-Wert ist daher
+  # arbiträr und nicht repräsentativ.
+  def available_for_location?(location)
+    return false if location.nil?
+
+    zid = location.zoho_location_id.to_s
+    return false if zid.blank?
+
+    crm_price_for_location(zid).present? ||
+      local_price_for_location(zid).present?
+  end
+
   # Aufbereitete Zeilen-Daten für die Admin-UI – eine Zeile pro Location
   #   [{ location_zoho_id:, location: <Location|nil>, crm_price:, local_price:,
   #      effective_price:, overridden?: }, ...]
