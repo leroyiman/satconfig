@@ -3,7 +3,13 @@ class Admin::ConfiguratorAssignmentsController < Admin::BaseController
 
   def index
     @configurator_type = params[:configurator_type] || "geschaeftsadresse"
-    @locations         = Location.active.includes(:city).order("locations.name")
+    # Sortierung passt zum Display-Format "Stadt – Standort": erst nach
+    # Stadt, dann nach effective_name (berücksichtigt lokale Overrides),
+    # beides case-insensitive. Daher Ruby-Sort statt SQL-ORDER.
+    @locations         = Location.active
+                                  .includes(:city)
+                                  .to_a
+                                  .sort_by { |l| [l.city.name.to_s.downcase, l.effective_name.to_s.downcase] }
 
     return unless @location
 
@@ -32,7 +38,6 @@ class Admin::ConfiguratorAssignmentsController < Admin::BaseController
                                .active
                                .where.not(type: "Addon")
                                .where.not(id: assigned_product_ids)
-                               .order(:type, Arel.sql("crm_attributes->>'name'"))
                                .to_a
 
     # 2) Addons — alle aktiven Addons, die einen Preis (CRM oder lokal)
@@ -40,9 +45,14 @@ class Admin::ConfiguratorAssignmentsController < Admin::BaseController
     addons_for_location = Addon.active
                                .where.not(id: assigned_product_ids)
                                .select { |a| a.available_for_location?(@location) }
-                               .sort_by { |a| a.effective_attr("name").to_s.downcase }
 
-    @available_products = (location_scoped + addons_for_location).group_by(&:type)
+    # Gruppieren nach Typ und innerhalb jeder Gruppe alphabetisch nach
+    # angezeigtem Namen (effective_attr berücksichtigt lokale Overrides).
+    @available_products = (location_scoped + addons_for_location)
+                            .group_by(&:type)
+                            .transform_values do |products|
+                              products.sort_by { |p| p.effective_attr("name").to_s.downcase }
+                            end
   end
 
   def create
